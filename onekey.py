@@ -59,7 +59,7 @@ class MaiBotManager:
                 "description": "一键管理程序本身",
                 "repo_url": "https://github.com/MoFox-Studio/OneKey-Plus.git",
                 "type": "python",
-                "branch": "Windows"  # 特殊标记，表示使用Windows分支
+                "branch": "Windows"  # 特殊标记，使用Windows分支
             },
             "bot": {
                 "name": "MoFox_Bot 主程序",
@@ -83,7 +83,8 @@ class MaiBotManager:
                 "main_file": "main.py", 
                 "description": "Matcha消息适配器",
                 "repo_url": "https://github.com/MoFox-Studio/Matcha-Adapter.git",
-                "type": "python"
+                "type": "python",
+                "branch": "main"   # byd这个分支为什么改名成了main而不是master了，害得我测试的时候炸了一次（恼）
             },
             "napcat": {
                 "name": "Napcat 服务",
