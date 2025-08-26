@@ -52,6 +52,15 @@ class MaiBotManager:
         
         # 服务配置
         self.services = {
+            "onekey": {
+                "name": "OneKey-Plus 管理程序",
+                "path": self.base_path,
+                "main_file": "onekey.py",
+                "description": "一键管理程序本身",
+                "repo_url": "https://github.com/MoFox-Studio/OneKey-Plus.git",
+                "type": "python",
+                "branch": "Windows"  # 特殊标记，表示使用Windows分支
+            },
             "bot": {
                 "name": "MoFox_Bot 主程序",
                 "path": self.base_path / "Bot",
@@ -139,16 +148,18 @@ class MaiBotManager:
         print("  9. 更新 MoFox_Bot 仓库")
         print("  10. 更新 Napcat-Adapter 仓库")
         print("  11. 更新 Matcha-Adapter 仓库")
-        print("  12. 更新所有仓库")
+        print("  12. 更新 OneKey-Plus 管理程序")
+        print("  13. 更新所有仓库")
         print()
         print(Colors.yellow("其他功能："))
-        print("  13. 安装/更新依赖包")
-        print("  14. 查看系统信息")
+        print("  14. 安装/更新依赖包")
+        print("  15. 查看系统信息")
         print()
         print(Colors.yellow("仓库状态检查："))
-        print("  15. 检查 MoFox_Bot 仓库状态")
-        print("  16. 检查 Napcat-Adapter 仓库状态")
-        print("  17. 检查 Matcha-Adapter 仓库状态")
+        print("  16. 检查 MoFox_Bot 仓库状态")
+        print("  17. 检查 Napcat-Adapter 仓库状态")
+        print("  18. 检查 Matcha-Adapter 仓库状态")
+        print("  19. 检查 OneKey-Plus 仓库状态")
         print("  0. 退出程序")
         print()
     
@@ -558,11 +569,25 @@ class MaiBotManager:
         if success:
             print(Colors.green(f"✅ {service['name']} 仓库更新成功"))
             
+            # 如果是更新 OneKey-Plus 管理程序自身，需要重启
+            if service_key == 'onekey':
+                print()
+                print(Colors.yellow("=" * 60))
+                print(Colors.yellow("⚠️  OneKey-Plus 管理程序已更新"))
+                print(Colors.yellow("   为了应用更新，程序将自动重启"))
+                print(Colors.yellow("=" * 60))
+                print()
+                input(Colors.cyan("按回车键重启程序..."))
+                
+                # 重启程序
+                self._restart_program()
+                return True
+            
             # 检查是否有requirements.txt文件
             requirements_file = repo_path / "requirements.txt"
             if requirements_file.exists():
                 print(Colors.cyan("建议检查是否有新的依赖包需要更新"))
-                print(Colors.cyan("如需更新依赖包，请选择主菜单的 '13. 安装/更新依赖包' 选项"))
+                print(Colors.cyan("如需更新依赖包，请选择主菜单的 '14. 安装/更新依赖包' 选项"))
                 print()
             
             return True
@@ -595,14 +620,40 @@ class MaiBotManager:
                 print(Colors.red(f"设置远程URL失败: {stderr}"))
                 return False
             
+            # 检查是否需要切换分支
+            branch = service.get("branch", "master")  # 默认为master分支
+            if branch != "master":
+                # 切换到指定分支
+                checkout_cmd = ['git', 'checkout', branch]
+                checkout_success, checkout_output = self.run_command_with_env(checkout_cmd, cwd=repo_path, env=env, show_output=False)
+                if not checkout_success:
+                    # 如果切换失败，可能需要先创建分支
+                    create_branch_cmd = ['git', 'checkout', '-b', branch, f'origin/{branch}']
+                    create_success, create_output = self.run_command_with_env(create_branch_cmd, cwd=repo_path, env=env, show_output=False)
+                    if not create_success:
+                        print(Colors.red(f"切换到分支 {branch} 失败"))
+                        return False
+            
             # 执行 git pull
-            pull_success, pull_output = self.run_command_with_env(['git', 'pull'], cwd=repo_path, env=env, show_output=False)
+            pull_cmd = ['git', 'pull', 'origin', branch]
+            pull_success, pull_output = self.run_command_with_env(pull_cmd, cwd=repo_path, env=env, show_output=False)
             
             if pull_success:
                 stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else str(pull_output)
                 # print(Colors.green("✅ 仓库更新成功"))  # 不需要这个print因为有重复
-                if stdout.strip() and "Already up to date" not in stdout:
-                    print(Colors.cyan(f"更新信息: {stdout.strip()}"))
+                
+                # 显示Git更新的详细信息
+                if stdout.strip():
+                    if "Already up to date" in stdout:
+                        print(Colors.cyan("仓库已是最新版本，无需更新"))
+                    else:
+                        print(Colors.cyan("Git更新详情："))
+                        print(Colors.cyan("-" * 40))
+                        for line in stdout.strip().split('\n'):
+                            if line.strip():
+                                print(Colors.cyan(f"  {line}"))
+                        print(Colors.cyan("-" * 40))
+                
                 return True
             else:
                 stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else ''
@@ -789,9 +840,6 @@ class MaiBotManager:
         print(f"路径: {Colors.cyan(str(repo_path))}")
         print()
         
-        # 获取GitHub Token
-        github_token = self._get_github_token()
-        
         try:
             # 切换到仓库目录
             original_cwd = os.getcwd()
@@ -804,35 +852,7 @@ class MaiBotManager:
             env['SSH_ASKPASS'] = 'echo'       # 禁用SSH密码提示
             env['GCM_INTERACTIVE'] = 'never'  # 禁用Git Credential Manager
             
-            # 如果有token，先设置认证URL
-            original_url = None
-            if github_token:
-                print(Colors.blue("使用Token认证获取远程仓库更新..."))
-                
-                # 获取原始URL
-                get_url_result = subprocess.run(
-                    ["git", "remote", "get-url", "origin"], 
-                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                )
-                
-                if get_url_result.returncode == 0:
-                    original_url = get_url_result.stdout.strip()
-                    
-                    # 构造带token的URL
-                    if original_url.startswith("https://github.com/"):
-                        auth_url = original_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        
-                        # 临时设置认证URL
-                        set_url_result = subprocess.run(
-                            ["git", "remote", "set-url", "origin", auth_url], 
-                            capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                        )
-                        
-                        if set_url_result.returncode != 0:
-                            print(Colors.yellow("设置认证URL失败，使用普通方式检查"))
-                            github_token = None
-            else:
-                print(Colors.blue("正在获取远程仓库更新..."))
+            print(Colors.blue("正在获取远程仓库更新..."))
             
             # 获取远程更新
             fetch_result = subprocess.run(
@@ -840,25 +860,12 @@ class MaiBotManager:
                 capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
             )
             
-            # 恢复原始URL（如果使用了token）
-            if github_token and original_url:
-                subprocess.run(
-                    ["git", "remote", "set-url", "origin", original_url], 
-                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                )
-            
             if fetch_result.returncode != 0:
                 print(Colors.red(f"获取远程更新失败: {fetch_result.stderr}"))
-                if github_token:
-                    print(Colors.yellow("提示：Token认证获取失败，可能是网络问题或Token权限不足"))
-                else:
-                    print(Colors.yellow("提示：未使用Token认证，可能因为网络限制导致失败"))
+                print(Colors.yellow("提示：可能因为网络限制导致失败"))
                 return
             else:
-                if github_token:
-                    print(Colors.green("✅ 使用Token认证成功获取远程更新"))
-                else:
-                    print(Colors.green("✅ 成功获取远程更新"))
+                print(Colors.green("✅ 成功获取远程更新"))
             
             # 获取当前分支
             branch_result = subprocess.run(
@@ -927,6 +934,37 @@ class MaiBotManager:
         
         print()
     
+    def _restart_program(self):
+        """重启程序"""
+        try:
+            # 获取当前Python脚本的完整路径
+            current_script = str(Path(__file__).resolve())
+            python_exe = str(self.python_executable)
+            
+            print(Colors.green("正在重启程序..."))
+            # print(Colors.cyan("注意：其他服务将继续运行，只重启管理程序"))  # 因为不需要这个print输出
+            
+            # 在新的 PowerShell 窗口中启动程序
+            restart_cmd = [
+                "powershell.exe", "-NoExit", "-Command",
+                f"Set-Location '{self.base_path}'; & '{python_exe}' '{current_script}'"
+            ]
+            
+            subprocess.Popen(
+                restart_cmd,
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                cwd=self.base_path
+            )
+            
+            # 退出当前程序
+            print(Colors.green("✅ 新程序窗口已启动，当前程序即将退出"))
+            time.sleep(1)
+            sys.exit(0)
+            
+        except Exception as e:
+            print(Colors.red(f"❌ 程序重启失败: {e}"))
+            print(Colors.yellow("请手动重启程序以应用更新"))
+    
     def show_system_info(self):
         """显示系统信息"""
         print(Colors.bold("系统信息："))
@@ -965,7 +1003,7 @@ class MaiBotManager:
                 self.print_menu()
                 
                 try:
-                    choice = input(Colors.bold("请选择操作 (0-17): ")).strip()
+                    choice = input(Colors.bold("请选择操作 (0-19): ")).strip()
 
                     if choice == '0':
                         print(Colors.green("程序退出"))
@@ -993,22 +1031,44 @@ class MaiBotManager:
                     elif choice == '11':
                         self.update_repository('matcha_adapter')
                     elif choice == '12':
-                        print(Colors.blue("正在更新所有仓库..."))
-                        for service_key in ['bot', 'adapter', 'matcha_adapter']:  # 只更新有仓库的服务
-                            if self.services[service_key].get("repo_url"):
-                                self.update_repository(service_key)
+                        self.update_repository('onekey')
                     elif choice == '13':
-                        self.install_requirements()
+                        print(Colors.blue("正在更新所有仓库..."))
+                        
+                        # 检查是否包含onekey更新
+                        services_to_update = ['onekey', 'bot', 'adapter', 'matcha_adapter']
+                        available_services = [key for key in services_to_update if self.services[key].get("repo_url")]
+                        
+                        if 'onekey' in available_services:
+                            # 如果包含onekey更新，询问用户是否继续
+                            print()
+                            print(Colors.yellow("⚠️  注意：更新包含 OneKey-Plus 管理程序"))
+                            print(Colors.yellow("   程序将在更新完成后自动重启"))
+                            print()
+                            confirm = input(Colors.bold("是否继续更新所有仓库？(y/N): ")).strip().lower()
+                            
+                            if confirm not in ['y', 'yes']:
+                                print(Colors.blue("取消更新"))
+                                continue
+                        
+                        # 执行更新
+                        for service_key in available_services:
+                            self.update_repository(service_key)
+                            # 如果更新了onekey，程序已经重启，不会执行到这里
                     elif choice == '14':
-                        self.show_system_info()
+                        self.install_requirements()
                     elif choice == '15':
-                        self.check_repository_status('bot')
+                        self.show_system_info()
                     elif choice == '16':
-                        self.check_repository_status('adapter')
+                        self.check_repository_status('bot')
                     elif choice == '17':
+                        self.check_repository_status('adapter')
+                    elif choice == '18':
                         self.check_repository_status('matcha_adapter')
+                    elif choice == '19':
+                        self.check_repository_status('onekey')
                     else:
-                        print(Colors.red("无效选择，请输入 0-17 之间的数字"))
+                        print(Colors.red("无效选择，请输入 0-19 之间的数字"))
                     
                     if choice != '0':
                         print()
