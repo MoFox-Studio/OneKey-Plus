@@ -1035,15 +1035,16 @@ class MaiBotManager:
                     elif choice == '13':
                         print(Colors.blue("正在更新所有仓库..."))
                         
-                        # 检查是否包含onekey更新
-                        services_to_update = ['onekey', 'bot', 'adapter', 'matcha_adapter']
+                        # 定义更新顺序：onekey放在最后，避免过早重启
+                        services_to_update = ['bot', 'adapter', 'matcha_adapter', 'onekey']
                         available_services = [key for key in services_to_update if self.services[key].get("repo_url")]
                         
                         if 'onekey' in available_services:
                             # 如果包含onekey更新，询问用户是否继续
                             print()
                             print(Colors.yellow("⚠️  注意：更新包含 OneKey-Plus 管理程序"))
-                            print(Colors.yellow("   程序将在更新完成后自动重启"))
+                            print(Colors.yellow("   OneKey-Plus 将在其他仓库更新完成后最后更新"))
+                            print(Colors.yellow("   程序将在所有更新完成后自动重启"))
                             print()
                             confirm = input(Colors.bold("是否继续更新所有仓库？(y/N): ")).strip().lower()
                             
@@ -1051,8 +1052,14 @@ class MaiBotManager:
                                 print(Colors.blue("取消更新"))
                                 continue
                         
-                        # 执行更新
+                        # 执行更新 - onekey已经在列表最后，会最后更新
                         for service_key in available_services:
+                            if service_key == 'onekey':
+                                print()
+                                print(Colors.yellow("=" * 50))
+                                print(Colors.yellow("最后更新 OneKey-Plus 管理程序..."))
+                                print(Colors.yellow("=" * 50))
+                            
                             self.update_repository(service_key)
                             # 如果更新了onekey，程序已经重启，不会执行到这里
                     elif choice == '14':
