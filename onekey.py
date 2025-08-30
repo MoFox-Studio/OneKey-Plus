@@ -14,6 +14,8 @@ import subprocess
 import time
 import json
 import base64
+import shutil
+import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
 import threading
@@ -86,6 +88,15 @@ class MaiBotManager:
                 "type": "python",
                 "branch": "main"   # byd这个分支为什么改名成了main而不是master了，害得我测试的时候炸了一次（恼）
             },
+            "mofox_ui": {
+                "name": "MoFox-UI",
+                "path": self.base_path / "MoFox-UI",
+                "main_file": None,
+                "description": "MoFox前端界面",
+                "repo_url": "https://github.com/MoFox-Studio/MoFox-UI.git",
+                "type": "ui",
+                "branch": "master"
+            },
             "napcat": {
                 "name": "Napcat 服务",
                 "path": self.base_path / "Napcat" / "Shell",
@@ -149,18 +160,20 @@ class MaiBotManager:
         print("  9. 更新 MoFox_Bot 仓库")
         print("  10. 更新 Napcat-Adapter 仓库")
         print("  11. 更新 Matcha-Adapter 仓库")
-        print("  12. 更新 OneKey-Plus 管理程序")
-        print("  13. 更新所有仓库")
+        print("  12. 更新 MoFox-UI 仓库")
+        print("  13. 更新 OneKey-Plus 管理程序")
+        print("  14. 更新所有仓库")
         print()
         print(Colors.yellow("其他功能："))
-        print("  14. 安装/更新依赖包")
-        print("  15. 查看系统信息")
+        print("  15. 安装/更新依赖包")
+        print("  16. 查看系统信息")
         print()
         print(Colors.yellow("仓库状态检查："))
-        print("  16. 检查 MoFox_Bot 仓库状态")
-        print("  17. 检查 Napcat-Adapter 仓库状态")
-        print("  18. 检查 Matcha-Adapter 仓库状态")
-        print("  19. 检查 OneKey-Plus 仓库状态")
+        print("  17. 检查 MoFox_Bot 仓库状态")
+        print("  18. 检查 Napcat-Adapter 仓库状态")
+        print("  19. 检查 Matcha-Adapter 仓库状态")
+        print("  20. 检查 MoFox-UI 仓库状态")
+        print("  21. 检查 OneKey-Plus 仓库状态")
         print("  0. 退出程序")
         print()
     
@@ -314,7 +327,6 @@ class MaiBotManager:
 
     def _find_git_executable(self) -> Optional[str]:
         """查找Git可执行文件的完整路径"""
-        import shutil
         
         # 首先尝试使用shutil.which查找
         git_path = shutil.which('git')
@@ -672,7 +684,6 @@ class MaiBotManager:
                         
         except Exception as e:
             print(Colors.red(f"仓库更新出错: {e}"))
-            import traceback
             print(Colors.red(f"详细错误: {traceback.format_exc()}"))
             return False
     
@@ -1004,7 +1015,7 @@ class MaiBotManager:
                 self.print_menu()
                 
                 try:
-                    choice = input(Colors.bold("请选择操作 (0-19): ")).strip()
+                    choice = input(Colors.bold("请选择操作 (0-21): ")).strip()
 
                     if choice == '0':
                         print(Colors.green("程序退出"))
@@ -1032,12 +1043,14 @@ class MaiBotManager:
                     elif choice == '11':
                         self.update_repository('matcha_adapter')
                     elif choice == '12':
-                        self.update_repository('onekey')
+                        self.update_repository('mofox_ui')
                     elif choice == '13':
+                        self.update_repository('onekey')
+                    elif choice == '14':
                         print(Colors.blue("正在更新所有仓库..."))
                         
                         # 定义更新顺序：onekey放在最后，避免过早重启
-                        services_to_update = ['bot', 'adapter', 'matcha_adapter', 'onekey']
+                        services_to_update = ['bot', 'adapter', 'matcha_adapter', 'mofox_ui', 'onekey']
                         available_services = [key for key in services_to_update if self.services[key].get("repo_url")]
                         
                         if 'onekey' in available_services:
@@ -1063,20 +1076,22 @@ class MaiBotManager:
                             
                             self.update_repository(service_key)
                             # 如果更新了onekey，程序已经重启，不会执行到这里
-                    elif choice == '14':
-                        self.install_requirements()
                     elif choice == '15':
-                        self.show_system_info()
+                        self.install_requirements()
                     elif choice == '16':
-                        self.check_repository_status('bot')
+                        self.show_system_info()
                     elif choice == '17':
-                        self.check_repository_status('adapter')
+                        self.check_repository_status('bot')
                     elif choice == '18':
-                        self.check_repository_status('matcha_adapter')
+                        self.check_repository_status('adapter')
                     elif choice == '19':
+                        self.check_repository_status('matcha_adapter')
+                    elif choice == '20':
+                        self.check_repository_status('mofox_ui')
+                    elif choice == '21':
                         self.check_repository_status('onekey')
                     else:
-                        print(Colors.red("无效选择，请输入 0-19 之间的数字"))
+                        print(Colors.red("无效选择，请输入 0-21 之间的数字"))
                     
                     if choice != '0':
                         print()
