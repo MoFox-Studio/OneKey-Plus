@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MaiBot-Plus 一键管理程序
+mofox 一键管理程序
 功能：
 1. 启动各种服务（Bot、Adapter、Matcha-Adapter）
 2. 更新GitHub仓库
@@ -10,12 +10,13 @@ MaiBot-Plus 一键管理程序
 
 import os
 import sys
+import io
 import subprocess
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 import time
 import json
 import base64
-import shutil
-import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
 import threading
@@ -45,6 +46,8 @@ class Colors:
     def cyan(text): return f"{Colors.CYAN}{text}{Colors.END}"
     @staticmethod
     def bold(text): return f"{Colors.BOLD}{text}{Colors.END}"
+    @staticmethod
+    def magenta(text): return f"{Colors.MAGENTA}{text}{Colors.END}"
 
 class MaiBotManager:
     def __init__(self):
@@ -87,15 +90,6 @@ class MaiBotManager:
                 "repo_url": "https://github.com/MoFox-Studio/Matcha-Adapter.git",
                 "type": "python",
                 "branch": "main"   # byd这个分支为什么改名成了main而不是master了，害得我测试的时候炸了一次（恼）
-            },
-            "mofox_ui": {
-                "name": "MoFox-UI",
-                "path": self.base_path / "MoFox-UI",
-                "main_file": None,
-                "description": "MoFox前端界面",
-                "repo_url": "https://github.com/MoFox-Studio/MoFox-UI.git",
-                "type": "ui",
-                "branch": "master"
             },
             "napcat": {
                 "name": "Napcat 服务",
@@ -160,19 +154,21 @@ class MaiBotManager:
         print("  9. 更新 MoFox_Bot 仓库")
         print("  10. 更新 Napcat-Adapter 仓库")
         print("  11. 更新 Matcha-Adapter 仓库")
-        print("  12. 更新 MoFox-UI 仓库")
-        print("  13. 更新 OneKey-Plus 管理程序")
-        print("  14. 更新所有仓库")
+        print("  12. 更新 OneKey-Plus 管理程序")
+        print("  13. 更新所有仓库")
         print()
         print(Colors.yellow("其他功能："))
-        print("  15. 安装/更新依赖包")
-        print("  16. 查看系统信息")
+        print("  14. 安装/更新依赖包")
+        print("  15. 查看系统信息")
+        print()
+        print(Colors.magenta("配置管理："))
+        print("  16. 打开配置文件")
+        print("  17. 修改权限设置")
         print()
         print(Colors.yellow("仓库状态检查："))
-        print("  17. 检查 MoFox_Bot 仓库状态")
-        print("  18. 检查 Napcat-Adapter 仓库状态")
-        print("  19. 检查 Matcha-Adapter 仓库状态")
-        print("  20. 检查 MoFox-UI 仓库状态")
+        print("  18. 检查 MoFox_Bot 仓库状态")
+        print("  19. 检查 Napcat-Adapter 仓库状态")
+        print("  20. 检查 Matcha-Adapter 仓库状态")
         print("  21. 检查 OneKey-Plus 仓库状态")
         print("  0. 退出程序")
         print()
@@ -327,6 +323,7 @@ class MaiBotManager:
 
     def _find_git_executable(self) -> Optional[str]:
         """查找Git可执行文件的完整路径"""
+        import shutil
         
         # 首先尝试使用shutil.which查找
         git_path = shutil.which('git')
@@ -684,6 +681,7 @@ class MaiBotManager:
                         
         except Exception as e:
             print(Colors.red(f"仓库更新出错: {e}"))
+            import traceback
             print(Colors.red(f"详细错误: {traceback.format_exc()}"))
             return False
     
@@ -977,6 +975,150 @@ class MaiBotManager:
             print(Colors.red(f"❌ 程序重启失败: {e}"))
             print(Colors.yellow("请手动重启程序以应用更新"))
     
+    def open_config_file(self):
+        """打开配置文件"""
+        config_files = [
+            ("Bot 核心配置", self.base_path / "Bot" / "config" / "bot_config.toml"),
+            ("模型相关配置", self.base_path / "Bot" / "config" / "model_config.toml"),
+            ("Adapter 权限配置", self.base_path / "Adapter" / "config" / "features.toml"),
+        ]
+
+        while True:
+            self.clear_screen()
+            print(Colors.bold("打开配置文件"))
+            print("=" * 50)
+            for i, (name, path) in enumerate(config_files, 1):
+                print(f"  {i}. 打开 {name}")
+            print()
+            print(Colors.cyan("  0. 返回主菜单"))
+            print()
+
+            choice = input(Colors.bold(f"请选择要打开的配置文件 (0-{len(config_files)}): ")).strip()
+
+            if choice == '0':
+                break
+            
+            try:
+                choice_index = int(choice) - 1
+                if 0 <= choice_index < len(config_files):
+                    name, path = config_files[choice_index]
+                    if path.exists():
+                        try:
+                            os.startfile(path)
+                            print(Colors.green(f"✅ 已尝试使用默认程序打开 {name}"))
+                        except Exception as e:
+                            print(Colors.red(f"❌ 打开文件失败: {e}"))
+                    else:
+                        print(Colors.red(f"❌ 配置文件不存在: {path}"))
+                else:
+                    print(Colors.red("无效选择"))
+            except ValueError:
+                print(Colors.red("无效输入，请输入数字"))
+
+            input(Colors.blue("按回车键继续..."))
+
+    def modify_permission_settings(self):
+        """修改权限设置"""
+        config_file = self.base_path / "Adapter" / "config" / "features.toml"
+        if not config_file.exists():
+            print(Colors.red(f"❌ 配置文件不存在: {config_file}"))
+            input(Colors.blue("按回车键继续..."))
+            return
+
+        try:
+            import tomlkit
+        except ImportError:
+            print(Colors.red("❌ tomlkit 库未安装，请先安装依赖"))
+            input(Colors.blue("按回车键继续..."))
+            return
+
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = tomlkit.load(f)
+        except Exception as e:
+            print(Colors.red(f"❌ 读取配置文件失败: {e}"))
+            input(Colors.blue("按回车键继续..."))
+            return
+
+        while True:
+            self.clear_screen()
+            print(Colors.bold("修改权限设置"))
+            print("=" * 50)
+            
+            group_list_type = config.get("group_list_type", "whitelist")
+            group_list = config.get("group_list", [])
+            private_list_type = config.get("private_list_type", "whitelist")
+            private_list = config.get("private_list", [])
+            ban_user_list = config.get("ban_user_id", [])
+
+            print(f"群聊模式: {Colors.green(group_list_type)} ({'白名单' if group_list_type == 'whitelist' else '黑名单'})")
+            print(f"群聊列表: {Colors.cyan(str(group_list))}")
+            print(f"私聊模式: {Colors.green(private_list_type)} ({'白名单' if private_list_type == 'whitelist' else '黑名单'})")
+            print(f"私聊列表: {Colors.cyan(str(private_list))}")
+            print(f"全局禁止列表: {Colors.red(str(ban_user_list))}")
+            print("-" * 50)
+            print("  1. 切换群聊模式 (白名单/黑名单)")
+            print("  2. 添加群号到列表")
+            print("  3. 从列表删除群号")
+            print("  4. 切换私聊模式 (白名单/黑名单)")
+            print("  5. 添加QQ号到列表")
+            print("  6. 从列表删除QQ号")
+            print("  7. 添加QQ号到全局禁止列表")
+            print("  8. 从全局禁止列表删除QQ号")
+            print("  9. 保存并退出")
+            print()
+            print(Colors.cyan("  0. 放弃修改并退出"))
+            print()
+
+            choice = input(Colors.bold("请选择操作 (0-9): ")).strip()
+
+            if choice == '0':
+                break
+            elif choice == '1':
+                config["group_list_type"] = "blacklist" if group_list_type == "whitelist" else "whitelist"
+            elif choice == '2':
+                new_id = input("输入要添加的群号: ").strip()
+                if new_id.isdigit():
+                    config["group_list"].append(int(new_id))
+            elif choice == '3':
+                del_id = input("输入要删除的群号: ").strip()
+                if del_id.isdigit() and int(del_id) in config["group_list"]:
+                    config["group_list"].remove(int(del_id))
+            elif choice == '4':
+                config["private_list_type"] = "blacklist" if private_list_type == "whitelist" else "whitelist"
+            elif choice == '5':
+                new_id = input("输入要添加的QQ号: ").strip()
+                if new_id.isdigit():
+                    config["private_list"].append(int(new_id))
+            elif choice == '6':
+                del_id = input("输入要删除的QQ号: ").strip()
+                if del_id.isdigit() and int(del_id) in config["private_list"]:
+                    config["private_list"].remove(int(del_id))
+            elif choice == '7':
+                new_id = input("输入要添加到全局禁止列表的QQ号: ").strip()
+                if new_id.isdigit():
+                    if "ban_user_id" not in config:
+                        config["ban_user_id"] = []
+                    config["ban_user_id"].append(int(new_id))
+            elif choice == '8':
+                del_id = input("输入要从全局禁止列表删除的QQ号: ").strip()
+                if del_id.isdigit() and int(del_id) in config.get("ban_user_id", []):
+                    config["ban_user_id"].remove(int(del_id))
+            elif choice == '9':
+                try:
+                    with open(config_file, 'w', encoding='utf-8') as f:
+                        tomlkit.dump(config, f)
+                    print(Colors.green("✅ 配置已保存"))
+                except Exception as e:
+                    print(Colors.red(f"❌ 保存配置文件失败: {e}"))
+                break
+            else:
+                print(Colors.red("无效选择"))
+            
+            if choice in ['1', '2', '3', '4', '5', '6', '7', '8']:
+                print(Colors.green("设置已更新，请记得保存！"))
+                time.sleep(1)
+
     def show_system_info(self):
         """显示系统信息"""
         print(Colors.bold("系统信息："))
@@ -1043,14 +1185,12 @@ class MaiBotManager:
                     elif choice == '11':
                         self.update_repository('matcha_adapter')
                     elif choice == '12':
-                        self.update_repository('mofox_ui')
-                    elif choice == '13':
                         self.update_repository('onekey')
-                    elif choice == '14':
+                    elif choice == '13':
                         print(Colors.blue("正在更新所有仓库..."))
                         
                         # 定义更新顺序：onekey放在最后，避免过早重启
-                        services_to_update = ['bot', 'adapter', 'matcha_adapter', 'mofox_ui', 'onekey']
+                        services_to_update = ['bot', 'adapter', 'matcha_adapter', 'onekey']
                         available_services = [key for key in services_to_update if self.services[key].get("repo_url")]
                         
                         if 'onekey' in available_services:
@@ -1076,18 +1216,20 @@ class MaiBotManager:
                             
                             self.update_repository(service_key)
                             # 如果更新了onekey，程序已经重启，不会执行到这里
-                    elif choice == '15':
+                    elif choice == '14':
                         self.install_requirements()
-                    elif choice == '16':
+                    elif choice == '15':
                         self.show_system_info()
+                    elif choice == '16':
+                        self.open_config_file()
                     elif choice == '17':
-                        self.check_repository_status('bot')
+                        self.modify_permission_settings()
                     elif choice == '18':
-                        self.check_repository_status('adapter')
+                        self.check_repository_status('bot')
                     elif choice == '19':
-                        self.check_repository_status('matcha_adapter')
+                        self.check_repository_status('adapter')
                     elif choice == '20':
-                        self.check_repository_status('mofox_ui')
+                        self.check_repository_status('matcha_adapter')
                     elif choice == '21':
                         self.check_repository_status('onekey')
                     else:
