@@ -72,7 +72,7 @@ class MaiBotManager:
             "bot": {
                 "name": "MoFox_Bot 主程序",
                 "path": self.base_path/ "core" / "Bot",
-                "main_file": "bot.py",
+                "main_file": "__main__.py",
                 "type": "python",
             },
             "napcat": {
@@ -356,11 +356,11 @@ class MaiBotManager:
 
     def open_config_file(self):
         config_files = [
-            ("Bot 核心配置", self.base_path / "Bot" / "config" / "bot_config.toml"),
-            ("模型相关配置", self.base_path / "Bot" / "config" / "model_config.toml"),
+            ("Bot 核心配置", self.base_path / "core" / "Bot" / "config" / "bot_config.toml"),
+            ("模型相关配置", self.base_path / "core" / "Bot" / "config" / "model_config.toml"),
             (
-                "Adapter 权限配置",
-                self.base_path / "Adapter" / "config" / "features.toml",
+                "Napcat 适配器配置",
+                self.base_path / "core" / "Bot" / "config" / "plugins" / "napcat_adapter" / "config.toml",
             ),
         ]
         while True:

@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 BASE_DIR = os.path.dirname(__file__)
 BOT_CONFIG_PATH = os.path.join(BASE_DIR, 'core', 'Bot', 'config', 'bot_config.toml')
 MODEL_CONFIG_PATH = os.path.join(BASE_DIR, 'core', 'Bot', 'config', 'model_config.toml')
+NAPCAT_ADAPTER_CONFIG_PATH = os.path.join(BASE_DIR, 'core', 'Bot', 'config', 'plugins', 'napcat_adapter', 'config.toml')
 ENV_PATH = os.path.join(BASE_DIR, 'core', 'Bot', '.env')
 
 
@@ -71,6 +72,27 @@ BOT_CONFIG_COMMENTS = {
         'sleep_by_schedule': "是严格按照日程表的时间睡觉，还是使用下面固定的时间？填 true 或 false。",
         'fixed_sleep_time': "如果不用日程表，Bot 每天几点睡觉？格式：HH:MM，例如 '23:00'。",
         'fixed_wake_up_time': "如果不用日程表，Bot 每天几点起床？格式：HH:MM，例如 '07:00'。"
+    }
+}
+
+# Napcat 适配器配置的注释
+NAPCAT_CONFIG_COMMENTS = {
+    'plugin': {
+        'enabled': "要不要启用 Napcat 适配器？没它 Bot 可没法在 QQ 里说话哦。填 true 或 false。"
+    },
+    'features': {
+        'group_list_type': "群聊是只听白名单的话 (whitelist)，还是把黑名单的家伙都赶出去 (blacklist)？",
+        'group_list': "把要加入白名单或黑名单的群号都扔到这里，用逗号或空格隔开。",
+        'private_list_type': "私聊也一样，是白名单模式 (whitelist) 还是黑名单模式 (blacklist)？",
+        'private_list': "把要加入白名单或黑名单的用户 QQ 号都扔到这里，用逗号或空格隔开。",
+        'ban_user_id': "有没有特别讨厌的家伙？把他们的 QQ 号放这里，Bot 就会永远无视他们。",
+        'ban_qq_bot': "要不要屏蔽其他 QQ 官方机器人？免得机器人之间聊起来没完没了。填 true 或 false。",
+        'enable_poke': "有人戳 Bot 的时候，要不要让它回应一下？填 true 或 false。",
+        'ignore_non_self_poke': "只回应戳自己的，还是别人互相戳也凑热闹？填 true 或 false。",
+        'poke_debounce_seconds': "设置一个冷静期（秒），防止有人一直戳戳戳，烦死啦。",
+        'enable_reply_at': "回复消息的时候，要不要顺便@一下那个人？填 true 或 false。",
+        'reply_at_rate': "有多大的概率会@他呢？填一个 0.0 到 1.0 之间的小数。",
+        'enable_emoji_like': "看到有趣的消息，Bot 会不会点个赞（发个表情回应）？填 true 或 false。",
     }
 }
 
@@ -142,6 +164,23 @@ def ask_for_config(config, comments, parent_key=''):
                     if new_ids_str:
                         import re
                         new_ids = [f"qq:{item.strip()}" for item in re.split(r'[\s,]+', new_ids_str) if item.strip()]
+                        # 去重合并
+                        current_set = set(value)
+                        current_set.update(new_ids)
+                        config[key] = sorted(list(current_set))
+                        print(f"   '{key}' 已更新为: {config[key]}")
+                    continue # 处理完跳过后面的通用逻辑
+                
+                # 为 Napcat 的黑白名单和 ban_user_id 提供更方便的列表输入
+                if key in ['group_list', 'private_list', 'ban_user_id']:
+                    print(f"-> 正在配置 '{key}':")
+                    print(f"   说明：{comment_text}")
+                    print(f"   当前值：{value}")
+                    new_ids_str = input("   请输入要添加的新 ID (多个用逗号或空格隔开, 直接回车则不添加): ").strip()
+                    if new_ids_str:
+                        import re
+                        # 这里的 ID 是纯数字字符串，不需要 'qq:' 前缀
+                        new_ids = [item.strip() for item in re.split(r'[\s,]+', new_ids_str) if item.strip()]
                         # 去重合并
                         current_set = set(value)
                         current_set.update(new_ids)
@@ -284,6 +323,34 @@ def configure_model():
         print(f"处理 `model_config.toml` 时发生未知错误：{e}")
 
 
+def configure_napcat_adapter():
+    """配置 napcat_adapter_config.toml 文件。"""
+    try:
+        # 检查文件是否存在，如果不存在则不进行配置
+        if not os.path.exists(NAPCAT_ADAPTER_CONFIG_PATH):
+            print(f"\n跳过 Napcat 适配器配置：未找到配置文件于 {NAPCAT_ADAPTER_CONFIG_PATH}")
+            return
+            
+        with open(NAPCAT_ADAPTER_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            config = tomlkit.load(f)
+
+        print("\n--- 开始配置 `napcat_adapter_config.toml` (QQ适配器) ---")
+        print("在这里，你可以调整 Bot 在 QQ 中的具体行为。")
+        
+        ask_for_config(config, NAPCAT_CONFIG_COMMENTS)
+
+        with open(NAPCAT_ADAPTER_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            tomlkit.dump(config, f)
+        print("\n`napcat_adapter_config.toml` 配置完成！")
+
+    except FileNotFoundError:
+        # 理论上上面的 os.path.exists 已经处理了，但为了保险起见
+        print(f"错误：找不到 `napcat_adapter_config.toml` 文件，路径：{NAPCAT_ADAPTER_CONFIG_PATH}")
+        print("请确认 'Napcat-Adapter' 是否已正确安装在 'OneKey-Plus/core/Bot/src/plugins/built_in/' 目录下。")
+    except Exception as e:
+        print(f"处理 `napcat_adapter_config.toml` 时发生未知错误：{e}")
+
+
 if __name__ == "__main__":
     if not check_eula():
         input("按 Enter 键退出...")
@@ -297,6 +364,7 @@ if __name__ == "__main__":
         print("\n")
         configure_bot()
         configure_model()
+        configure_napcat_adapter()
         print("\n\n==============================================")
         print("所有配置已完成！现在你可以启动主程序了。")
         print("==============================================")
