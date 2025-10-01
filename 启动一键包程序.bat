@@ -2,12 +2,17 @@
 CHCP 65001 >nul
 setlocal enabledelayedexpansion
 
-echo ========================================
-echo      MaiBot-Plus 一键启动程序
-echo ========================================
+:: ========================================
+::      MaiBot-Plus 一键启动程序
+:: ========================================
 echo.
 
-REM 检测是否在压缩包内运行
+:: ----------------------------------------
+:: 1. 环境检测
+:: ----------------------------------------
+echo [INFO] 正在进行环境检测...
+
+:: 检测是否在压缩包内运行
 set "CURRENT_PATH=%~dp0"
 echo %CURRENT_PATH% | findstr /i "temp" >nul && set "IN_ARCHIVE=1" || set "IN_ARCHIVE=0"
 echo %CURRENT_PATH% | findstr /i "tmp" >nul && set "IN_ARCHIVE=1"
@@ -16,110 +21,108 @@ echo %CURRENT_PATH% | findstr /i "zip$" >nul && set "IN_ARCHIVE=1"
 echo %CURRENT_PATH% | findstr /i "7z$" >nul && set "IN_ARCHIVE=1"
 
 if "%IN_ARCHIVE%"=="1" (
-    echo ❌ 检测到在压缩包中运行！
+    echo [ERROR] 检测到脚本在临时解压目录中运行！
     echo.
-    echo 请先解压缩文件到本地目录再运行此脚本
-    echo.
-    pause >nul
-    exit /b 1
-)
-
-REM 保存当前目录
-set "CURRENT_DIR=%CD%"
-cd /d "%~dp0"
-
-echo 启动 MaiBot-Plus 管理程序...
-echo ========================================
-
-REM 启动onekey.py
-python_embedded\python.exe onekey.py
-
-REM 如果程序异常退出，显示错误信息
-if !errorlevel! neq 0 (
-    echo.
-    echo ========================================
-    echo 程序异常退出，错误代码：!errorlevel!
-    echo ========================================
-)
-
-echo.
-echo 按任意键退出...
-pause >nul
-
-@echo off
-CHCP 65001 >nul
-setlocal enabledelayedexpansion
-
-echo ========================================
-echo      MaiBot-Plus 一键启动程序
-echo ========================================
-echo.
-
-REM 检测是否在压缩包内运行
-set "CURRENT_PATH=%~dp0"
-echo %CURRENT_PATH% | findstr /i "temp" >nul && set "IN_ARCHIVE=1" || set "IN_ARCHIVE=0"
-echo %CURRENT_PATH% | findstr /i "tmp" >nul && set "IN_ARCHIVE=1"
-echo %CURRENT_PATH% | findstr /i "rar$" >nul && set "IN_ARCHIVE=1"
-echo %CURRENT_PATH% | findstr /i "zip$" >nul && set "IN_ARCHIVE=1"
-echo %CURRENT_PATH% | findstr /i "7z$" >nul && set "IN_ARCHIVE=1"
-
-if "%IN_ARCHIVE%"=="1" (
-    echo ❌ 检测到在压缩包中运行！
-    echo.
-    echo 请先解压缩文件到本地目录再运行此脚本
+    echo         请先将程序完整解压到磁盘上的某个文件夹后再运行。
     echo.
     pause >nul
     exit /b 1
 )
 
-REM 保存当前目录
-set "CURRENT_DIR=%CD%"
+:: 切换到脚本所在目录
 cd /d "%~dp0"
 
-REM 检查虚拟环境和依赖标记
-set "VENV_PATH=%~dp0.venv"
-set "PYTHON_PATH=%VENV_PATH%\Scripts\python.exe"
-set "DEPS_CHECK_FILE=%~dp0.deps_installed"
+:: 定义核心路径
+set "PYTHON_EXECUTABLE=%~dp0python_embedded\python.exe"
+set "INIT_FLAG_FILE=%~dp0core\.initialized"
+set "UPDATE_SCRIPT=%~dp0update.py"
+set "CONFIG_SCRIPT=%~dp0config_wizard.py"
+set "MAIN_SCRIPT=%~dp0onekey.py"
 
-echo 检查运行环境...
-
-if not exist "%PYTHON_PATH%" (
-    echo ❌ 虚拟环境未找到！
+:: 检查Python解释器
+if not exist "%PYTHON_EXECUTABLE%" (
+    echo [ERROR] 未找到核心依赖: python_embedded\python.exe
     echo.
-    echo 请先运行 "首次启动点我.bat" 初始化环境
+    echo         请确认程序文件是否完整。
     echo.
-    pause
+    pause >nul
     exit /b 1
 )
-
-if not exist "%DEPS_CHECK_FILE%" (
-    echo ❌ 依赖未安装！
-    echo.
-    echo 请先运行 "首次启动点我.bat" 安装依赖
-    echo.
-    pause
-    exit /b 1
-)
-
-echo ✅ 环境检查通过
+echo [INFO] 环境检测通过。
 echo.
-echo 启动 MaiBot-Plus 管理程序...
+
+:: ========================================
+:: 2. 初始化与启动逻辑
+:: ========================================
+
+:: 检查初始化标记文件
+if exist "%INIT_FLAG_FILE%" (
+    echo [INFO] 检测到已完成初始化, 直接启动主程序...
+    goto :start_main_program
+)
+
+echo [INFO] 未检测到初始化标记, 开始执行首次配置流程...
+echo.
+
+:: 确保core文件夹存在
+if not exist "%~dp0core" (
+    echo [INFO] 正在创建core文件夹...
+    mkdir "%~dp0core"
+)
+
+:: 执行更新脚本
 echo ========================================
+echo      STEP 1: 执行更新程序
+echo ========================================
+"%PYTHON_EXECUTABLE%" "%UPDATE_SCRIPT%"
+if !errorlevel! neq 0 (
+    echo.
+    echo [ERROR] 更新程序执行失败, 错误代码: !errorlevel!
+    echo.
+    echo         请检查网络连接或查看上方日志输出。
+    pause >nul
+    exit /b !errorlevel!
+)
+echo [SUCCESS] 更新程序执行成功。
+echo.
 
-REM 启动onekey.py
-"%PYTHON_PATH%" onekey.py
+:: 执行配置向导
+echo ========================================
+echo      STEP 2: 执行配置向导
+echo ========================================
+"%PYTHON_EXECUTABLE%" "%CONFIG_SCRIPT%"
+if !errorlevel! neq 0 (
+    echo.
+    echo [ERROR] 配置向导执行失败, 错误代码: !errorlevel!
+    echo.
+    echo         请根据向导提示完成配置。
+    pause >nul
+    exit /b !errorlevel!
+)
+echo [SUCCESS] 配置向导执行成功。
+echo.
 
-REM 如果程序异常退出，显示错误信息
+:: 创建初始化标记
+echo [INFO] 首次配置流程全部成功, 创建初始化标记...
+echo Initialized on %date% %time% > "%INIT_FLAG_FILE%"
+echo.
+
+:start_main_program
+:: ========================================
+::      STEP 3: 启动主程序
+:: ========================================
+echo [INFO] 正在启动 MaiBot-Plus 管理程序...
+echo.
+"%PYTHON_EXECUTABLE%" "%MAIN_SCRIPT%"
+
 if !errorlevel! neq 0 (
     echo.
     echo ========================================
-    echo 程序异常退出，错误代码：!errorlevel!
-    echo.
-    echo 如果遇到依赖问题，请重新运行：
-    echo    "首次启动点我.bat"
+    echo [WARNING] 主程序异常退出, 错误代码: !errorlevel!
     echo ========================================
 )
 
 echo.
-echo 按任意键退出...
+echo 程序已结束, 按任意键退出...
 pause >nul
+exit /b 0
