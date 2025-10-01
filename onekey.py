@@ -224,7 +224,7 @@ class MaiBotManager:
                     "start",
                     "cmd.exe",
                     "/k",
-                    f"chcp 65001 && \"{service_path / main_file}\"",
+                    f"chcp 65001 && {service_path / main_file}",
                 ]
                 process = subprocess.Popen(cmd_command, cwd=service_path)
             elif service_type == "exe":
@@ -296,7 +296,6 @@ class MaiBotManager:
             self.clear_screen()
             print(Colors.bold("依赖包管理"))
             print("  1. 更新 / 重装 Bot本体依赖")
-            print("  2. 更新 / 重装 Adapter依赖")
             print("  3. 更新 / 重装 所有依赖")
             print("  0. 返回主菜单")
 
@@ -306,8 +305,6 @@ class MaiBotManager:
                 break
             elif choice == "1":
                 self._install_service_requirements("bot")
-            elif choice == "2":
-                self._install_service_requirements("adapter")
             elif choice == "3":
                 self._install_all_requirements()
             else:
@@ -322,22 +319,34 @@ class MaiBotManager:
             return
 
         print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
-        mirror_url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-        cmd = [
-            str(self.python_executable),
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            str(requirements_file),
-            "-i",
-            mirror_url,
+        
+        mirrors = [
+            "https://pypi.tuna.tsinghua.edu.cn/simple",
+            "https://pypi.doubanio.com/simple/",
+            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/",
         ]
-        success, _ = self.run_command(cmd)
-        if success:
-            print(Colors.green(f"✅ {service['name']} 依赖安装完成"))
-        else:
-            print(Colors.red(f"❌ {service['name']} 依赖安装失败"))
+        
+        for mirror_url in mirrors:
+            print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
+            cmd = [
+                str(self.python_executable),
+                "-m",
+                "pip",
+                "install",
+                "-r",
+                str(requirements_file),
+                "-i",
+                mirror_url,
+            ]
+            success, _ = self.run_command(cmd)
+            if success:
+                print(Colors.green(f"✅ {service['name']} 依赖安装完成"))
+                return
+            else:
+                print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
+        
+        print(Colors.red(f"❌ {service['name']} 依赖安装失败，所有镜像源均尝试失败。"))
 
     def _install_all_requirements(self):
         for service_key in self.services:
