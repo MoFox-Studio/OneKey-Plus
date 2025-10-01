@@ -70,15 +70,19 @@ class Updater:
 
     def run_command(self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True) -> tuple:
         try:
+            # 当show_output为True时，我们不捕获输出，让其直接流向控制台
+            # 当show_output为False时，我们捕获输出以供后续处理
+            capture = not show_output
             result = subprocess.run(
-                cmd, 
-                cwd=cwd, 
-                capture_output=not show_output,
+                cmd,
+                cwd=cwd,
+                capture_output=capture,
                 text=True,
                 encoding='utf-8',
                 errors='ignore'
             )
-            return result.returncode == 0, result.stdout if not show_output else ""
+            output = result.stdout if capture else ""
+            return result.returncode == 0, output
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
             return False, str(e)
@@ -92,20 +96,24 @@ class Updater:
                 else:
                     print(Colors.red("错误：系统中未找到Git"))
                     return False, "Git not found"
-            
+
+            # 当show_output为True时，不捕获输出，让其直接流向控制台
+            # 当show_output为False时，捕获输出
+            capture = not show_output
             result = subprocess.run(
-                cmd, 
+                cmd,
                 cwd=str(cwd) if cwd else None,
                 env=env,
-                capture_output=not show_output,
+                capture_output=capture,
                 text=True,
                 encoding='utf-8',
                 errors='ignore'
             )
-            
-            if not show_output:
+
+            if capture:
                 output_info = {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
                 return result.returncode == 0, output_info
+            
             return result.returncode == 0, ""
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
@@ -117,24 +125,43 @@ class Updater:
             env = os.environ.copy()
             env['GIT_TERMINAL_PROMPT'] = '0'
             
-            self.run_command_with_env(['git', 'remote', 'set-url', 'origin', repo_url], cwd=repo_path, env=env, show_output=False)
+            self.run_command_with_env(['git', 'remote', 'set-url', 'origin', repo_url], cwd=repo_path, env=env)
             
-            branch = service.get("branch", "master")
-            checkout_success, _ = self.run_command_with_env(['git', 'checkout', branch], cwd=repo_path, env=env, show_output=False)
-            if not checkout_success:
-                self.run_command_with_env(['git', 'checkout', '-b', branch, f'origin/{branch}'], cwd=repo_path, env=env, show_output=False)
+            # 检查本地是否有修改
+            status_success, status_output = self.run_command_with_env(['git', 'status', '--porcelain'], cwd=repo_path, env=env, show_output=False)
+            if status_success and status_output['stdout']:
+                print(Colors.yellow("检测到本地仓库有未提交的修改。"))
+                sys.stdout.flush()
+                choice = input(Colors.yellow("是否要重置本地仓库并强制更新？(Y/N): ")).strip().lower()
+                if choice == 'y':
+                    print(Colors.cyan("正在重置本地仓库..."))
+                    sys.stdout.flush()
+                    reset_success, _ = self.run_command_with_env(['git', 'reset', '--hard', 'HEAD'], cwd=repo_path, env=env)
+                    if not reset_success:
+                        print(Colors.red("重置本地仓库失败，跳过更新。"))
+                        return False
+                else:
+                    print(Colors.cyan("已取消更新操作。"))
+                    return False
 
-            pull_success, pull_output = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env, show_output=False)
+            branch = service.get("branch", "master")
+            
+            print(Colors.cyan(f"正在切换到分支: {branch}"))
+            sys.stdout.flush()
+            checkout_success, _ = self.run_command_with_env(['git', 'checkout', branch], cwd=repo_path, env=env)
+            if not checkout_success:
+                print(Colors.cyan(f"本地不存在分支 {branch}，尝试创建并切换..."))
+                sys.stdout.flush()
+                self.run_command_with_env(['git', 'checkout', '-b', branch, f'origin/{branch}'], cwd=repo_path, env=env)
+
+            print(Colors.cyan(f"正在从 origin 拉取最新内容..."))
+            sys.stdout.flush()
+            pull_success, _ = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env)
             
             if pull_success:
-                stdout = pull_output.get('stdout', '')
-                if "Already up to date" in stdout:
-                    print(Colors.cyan("仓库已是最新版本。"))
-                else:
-                    print(Colors.cyan("Git更新详情：\n" + stdout))
                 return True
             else:
-                print(Colors.red(f"仓库更新失败: {pull_output.get('stderr', '')}"))
+                print(Colors.red(f"仓库更新失败。"))
                 return False
         except Exception as e:
             print(Colors.red(f"仓库更新出错: {e}"))
@@ -145,17 +172,19 @@ class Updater:
         if requirements_file.exists():
             print(Colors.blue(f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."))
             mirror_url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-            cmd = [str(self.python_executable), '-m', 'pip', 'install', '-r', str(requirements_file), '-i', mirror_url, '--upgrade']
+            # 添加 -q 参数来减少不必要的输出
+            cmd = [str(self.python_executable), '-m', 'pip', 'install', '-q', '-r', str(requirements_file), '-i', mirror_url, '--upgrade']
             
-            # 使用 show_output=False 来捕获输出
-            success, output = self.run_command(cmd, show_output=False)
+            # 默认不显示输出，但在失败时捕获并打印错误
+            success, output = self.run_command(cmd, show_output=True)
             
             if success:
                 print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"))
             else:
                 print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败"))
-                # 打印详细错误信息
-                print(Colors.yellow("错误详情:\n" + output))
+                # 如果有错误输出，则打印出来
+                if output:
+                    print(Colors.yellow("错误详情:\n" + output))
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
 
