@@ -6,3 +6,6 @@
 !启动一键包程序.bat
 !首次启动现在不需要点我但是如果你实在要点那我也没办法.bat
 !.gitignore
+!update.py
+!启动更新程序.bat
+!README.md
