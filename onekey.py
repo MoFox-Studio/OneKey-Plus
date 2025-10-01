@@ -150,13 +150,26 @@ class MaiBotManager:
         print("  7. 查看运行状态")
         print("  8. 启动数据库管理程序")
         print()
+        print(Colors.blue("更新管理："))
+        print("  9. 更新 MoFox_Bot 仓库")
+        print("  10. 更新 Napcat-Adapter 仓库")
+        print("  11. 更新 Matcha-Adapter 仓库")
+        print("  12. 更新 OneKey-Plus 管理程序")
+        print("  13. 更新所有仓库")
+        print()
         print(Colors.yellow("其他功能："))
-        print("  9. 安装/更新依赖包")
-        print("  10. 查看系统信息")
+        print("  14. 安装/更新依赖包")
+        print("  15. 查看系统信息")
         print()
         print(Colors.magenta("配置管理："))
-        print("  11. 打开配置文件")
-        print("  12. 修改权限设置")
+        print("  16. 打开配置文件")
+        print("  17. 修改权限设置")
+        print()
+        print(Colors.yellow("仓库状态检查："))
+        print("  18. 检查 MoFox_Bot 仓库状态")
+        print("  19. 检查 Napcat-Adapter 仓库状态")
+        print("  20. 检查 Matcha-Adapter 仓库状态")
+        print("  21. 检查 OneKey-Plus 仓库状态")
         print("  0. 退出程序")
         print()
     
@@ -509,6 +522,427 @@ class MaiBotManager:
         except Exception as e:
             print(Colors.red(f"❌ 启动SQLiteStudio失败: {e}"))
             return False
+    
+    def update_repository(self, service_key: str):
+        """更新仓库"""
+        # 首先检查Git环境
+        if not self._find_git_executable():
+            print(Colors.red("❌ Git未安装或不在系统PATH中"))
+            print(Colors.yellow("解决方案："))
+            print("  1. 下载并安装Git: https://git-scm.com/download/windows")
+            print("  2. 确保Git安装时选择'Add Git to PATH'选项")
+            print("  3. 重启命令行程序")
+            print("  4. 或手动将Git添加到系统环境变量PATH中")
+            print()
+            print(Colors.cyan("建议的常见Git安装路径：（对的就是说git建议装在C盘里面）"))
+            print("  - C:\\Program Files\\Git\\bin")
+            print("  - C:\\Program Files (x86)\\Git\\bin")
+            return False
+            
+        if service_key not in self.services:
+            print(Colors.red(f"未知服务: {service_key}"))
+            return False
+        
+        service = self.services[service_key]
+        
+        # 检查是否有仓库URL
+        if not service.get("repo_url"):
+            print(Colors.yellow(f"{service['name']} 没有关联的Git仓库，跳过更新"))
+            return True
+        
+        repo_path = service["path"]
+        
+        if not repo_path.exists():
+            print(Colors.red(f"仓库目录不存在: {repo_path}"))
+            return False
+        
+        # 检查是否是Git仓库
+        git_dir = repo_path / ".git"
+        if not git_dir.exists():
+            print(Colors.red(f"目录不是Git仓库: {repo_path}"))
+            print(Colors.yellow("请确保目录是通过git clone获得的"))
+            return False
+        
+        print(Colors.yellow(f"准备更新 {service['name']} 仓库"))
+        print(Colors.yellow("更新将会覆盖本地修改，请确认是否继续？"))
+        confirm = input("输入 'yes' 确认更新，其他任意输入取消: ").strip().lower()
+        
+        if confirm != 'yes':
+            print(Colors.blue("取消更新"))
+            return False
+        
+        print(Colors.blue(f"正在更新 {service['name']} 仓库..."))
+        
+        # 直接使用公开仓库更新
+        success = self._update_public_repo(service, repo_path)
+        
+        if success:
+            print(Colors.green(f"✅ {service['name']} 仓库更新成功"))
+            
+            # 如果是更新 OneKey-Plus 管理程序自身，需要重启
+            if service_key == 'onekey':
+                print()
+                print(Colors.yellow("=" * 60))
+                print(Colors.yellow("⚠️  OneKey-Plus 管理程序已更新"))
+                print(Colors.yellow("   为了应用更新，程序将自动重启"))
+                print(Colors.yellow("=" * 60))
+                print()
+                input(Colors.cyan("按回车键重启程序..."))
+                
+                # 重启程序
+                self._restart_program()
+                return True
+            
+            # 检查是否有requirements.txt文件
+            requirements_file = repo_path / "requirements.txt"
+            if requirements_file.exists():
+                print(Colors.cyan("建议检查是否有新的依赖包需要更新"))
+                print(Colors.cyan("如需更新依赖包，请选择主菜单的 '14. 安装/更新依赖包' 选项"))
+                print()
+            
+            return True
+        else:
+            print(Colors.red(f"❌ {service['name']} 仓库更新失败"))
+            return False
+    
+    def _update_public_repo(self, service: dict, repo_path: Path) -> bool:
+        """更新公开仓库"""
+        try:
+            # 获取仓库URL
+            repo_url = service.get("repo_url", "")
+            if not repo_url.startswith("https://github.com/"):
+                print(Colors.red("不支持的仓库URL格式"))
+                return False
+            
+            # 设置环境变量以禁用Git交互提示
+            env = os.environ.copy()
+            env['GIT_TERMINAL_PROMPT'] = '0'
+            env['GIT_ASKPASS'] = ''
+            env['SSH_ASKPASS'] = ''
+            env['GCM_INTERACTIVE'] = 'never'  # 禁用Git Credential Manager
+            
+            # 确保远程URL是正确的
+            set_url_cmd = ['git', 'remote', 'set-url', 'origin', repo_url]
+            success, output = self.run_command_with_env(set_url_cmd, cwd=repo_path, env=env, show_output=False)
+            
+            if not success:
+                stderr = output.get('stderr', '') if isinstance(output, dict) else str(output)
+                print(Colors.red(f"设置远程URL失败: {stderr}"))
+                return False
+            
+            # 检查是否需要切换分支
+            branch = service.get("branch", "master")  # 默认为master分支
+            if branch != "master":
+                # 切换到指定分支
+                checkout_cmd = ['git', 'checkout', branch]
+                checkout_success, checkout_output = self.run_command_with_env(checkout_cmd, cwd=repo_path, env=env, show_output=False)
+                if not checkout_success:
+                    # 如果切换失败，可能需要先创建分支
+                    create_branch_cmd = ['git', 'checkout', '-b', branch, f'origin/{branch}']
+                    create_success, create_output = self.run_command_with_env(create_branch_cmd, cwd=repo_path, env=env, show_output=False)
+                    if not create_success:
+                        print(Colors.red(f"切换到分支 {branch} 失败"))
+                        return False
+            
+            # 执行 git pull
+            pull_cmd = ['git', 'pull', 'origin', branch]
+            pull_success, pull_output = self.run_command_with_env(pull_cmd, cwd=repo_path, env=env, show_output=False)
+            
+            if pull_success:
+                stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else str(pull_output)
+                # print(Colors.green("✅ 仓库更新成功"))  # 不需要这个print因为有重复
+                
+                # 显示Git更新的详细信息
+                if stdout.strip():
+                    if "Already up to date" in stdout:
+                        print(Colors.cyan("仓库已是最新版本，无需更新"))
+                    else:
+                        print(Colors.cyan("Git更新详情："))
+                        print(Colors.cyan("-" * 40))
+                        for line in stdout.strip().split('\n'):
+                            if line.strip():
+                                print(Colors.cyan(f"  {line}"))
+                        print(Colors.cyan("-" * 40))
+                
+                return True
+            else:
+                stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else ''
+                stderr = pull_output.get('stderr', '') if isinstance(pull_output, dict) else str(pull_output)
+                returncode = pull_output.get('returncode', -1) if isinstance(pull_output, dict) else -1
+                
+                print(Colors.red(f"仓库更新失败"))
+                print(Colors.yellow("详细错误信息:"))
+                print(Colors.yellow(f"  返回码: {returncode}"))
+                if stdout.strip():
+                    print(Colors.yellow(f"  标准输出: {stdout.strip()}"))
+                if stderr.strip():
+                    print(Colors.yellow(f"  错误输出: {stderr.strip()}"))
+                return False
+                        
+        except Exception as e:
+            print(Colors.red(f"仓库更新出错: {e}"))
+            import traceback
+            print(Colors.red(f"详细错误: {traceback.format_exc()}"))
+            return False
+    
+    
+    def install_requirements(self):
+        """安装/更新依赖包 - 提供选择菜单"""
+        while True:
+            self.clear_screen()
+            print(Colors.bold("依赖包管理"))
+            print("=" * 50)
+            print()
+            print(Colors.green("选择要更新/重装的依赖："))
+            print("  1. 更新 / 重装 Bot本体依赖")
+            print("  2. 更新 / 重装 Adapter依赖") 
+            print("  3. 更新 / 重装 Matcha-Adapter依赖")
+            print("  4. 更新 / 重装 所有依赖")
+            print()
+            print(Colors.cyan("  0. 返回主菜单"))
+            print()
+            
+            try:
+                choice = input(Colors.bold("请选择操作 (0-4): ")).strip()
+                
+                if choice == '0':
+                    break
+                elif choice == '1':
+                    self._install_service_requirements('bot')
+                elif choice == '2':
+                    self._install_service_requirements('adapter')
+                elif choice == '3':
+                    self._install_service_requirements('matcha_adapter')
+                elif choice == '4':
+                    self._install_all_requirements()
+                else:
+                    print(Colors.red("无效选择，请输入 0-4 之间的数字"))
+                    input(Colors.blue("按回车键继续..."))
+                    
+            except KeyboardInterrupt:
+                print(Colors.yellow("\n操作已取消"))
+                break
+    
+    def _install_service_requirements(self, service_key: str):
+        """安装指定服务的依赖包"""
+        if service_key not in self.services:
+            print(Colors.red(f"未知服务: {service_key}"))
+            input(Colors.blue("按回车键继续..."))
+            return
+        
+        service = self.services[service_key]
+        requirements_file = service["path"] / "requirements.txt"
+        
+        if not requirements_file.exists():
+            print(Colors.yellow(f"{service['name']} 没有 requirements.txt 文件，跳过"))
+            input(Colors.blue("按回车键继续..."))
+            return
+        
+        print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
+        print(f"依赖文件: {Colors.cyan(str(requirements_file))}")
+        
+        # 清华大学PyPI镜像源
+        mirror_url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+        print(f"使用清华大学PyPI镜像源: {Colors.cyan(mirror_url)}")
+        print()
+        
+        # 尝试多种安装方式（优先使用清华源）
+        install_commands = [
+            # 方式1: 标准安装 + 清华源
+            [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '-r', str(requirements_file)],
+            # 方式2: 使用用户模式安装 + 清华源
+            [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--user', '-r', str(requirements_file)],
+            # 方式3: 强制重装 + 清华源
+            [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--force-reinstall', '-r', str(requirements_file)],
+            # 方式4: 使用缓存目录 + 清华源
+            [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--cache-dir', str(self.base_path / '.pip_cache'), '-r', str(requirements_file)],
+            # 方式5: 备用，不使用镜像源
+            [str(self.python_executable), '-m', 'pip', 'install', '-r', str(requirements_file)]
+        ]
+        
+        success = False
+        for i, cmd in enumerate(install_commands):
+            if i < 4:
+                print(Colors.yellow(f"尝试安装方式 {i+1}/5 (使用清华源)..."))
+            else:
+                print(Colors.yellow(f"尝试安装方式 {i+1}/5 (使用官方源)..."))
+            success, output = self.run_command(cmd, show_output=True)
+            if success:
+                print(Colors.green(f"✅ {service['name']} 依赖安装完成"))
+                break
+            else:
+                print(Colors.yellow(f"方式 {i+1} 失败，尝试下一种方式..."))
+        
+        if not success:
+            print(Colors.red(f"❌ {service['name']} 依赖安装失败"))
+            print(Colors.red(f"手动安装命令(清华源): cd {service['path']} && {self.python_executable} -m pip install -i {mirror_url} -r requirements.txt"))
+            print(Colors.red(f"手动安装命令(官方源): cd {service['path']} && {self.python_executable} -m pip install -r requirements.txt"))
+        
+        print()
+        input(Colors.blue("按回车键继续..."))
+    
+    def _install_all_requirements(self):
+        """安装所有服务的依赖包"""
+        print(Colors.blue("正在检查并安装所有依赖包..."))
+        print()
+        
+        # 清华大学PyPI镜像源
+        mirror_url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+        
+        for service_key, service in self.services.items():
+            requirements_file = service["path"] / "requirements.txt"
+            if requirements_file.exists():
+                print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
+                print(Colors.cyan(f"使用清华大学PyPI镜像源: {mirror_url}"))
+                
+                # 尝试多种安装方式（优先使用清华源）
+                install_commands = [
+                    [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '-r', str(requirements_file)],
+                    [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--user', '-r', str(requirements_file)],
+                    [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--force-reinstall', '-r', str(requirements_file)],
+                    [str(self.python_executable), '-m', 'pip', 'install', '-i', mirror_url, '--cache-dir', str(self.base_path / '.pip_cache'), '-r', str(requirements_file)],
+                    # 备用：不使用镜像源的原始命令
+                    [str(self.python_executable), '-m', 'pip', 'install', '-r', str(requirements_file)]
+                ]
+                
+                success = False
+                for i, cmd in enumerate(install_commands):
+                    if i < 4:
+                        print(Colors.yellow(f"尝试安装方式 {i+1}/5 (使用清华源)..."))
+                    else:
+                        print(Colors.yellow(f"尝试安装方式 {i+1}/5 (使用官方源)..."))
+                    success, output = self.run_command(cmd, show_output=False)
+                    if success:
+                        print(Colors.green(f"✅ {service['name']} 依赖安装完成"))
+                        break
+                    else:
+                        print(Colors.yellow(f"方式 {i+1} 失败，尝试下一种方式..."))
+                
+                if not success:
+                    print(Colors.red(f"❌ {service['name']} 依赖安装失败，请尝试手动安装"))
+                    print(Colors.red(f"手动安装命令(清华源): cd {service['path']} && {self.python_executable} -m pip install -i {mirror_url} -r requirements.txt"))
+                    print(Colors.red(f"手动安装命令(官方源): cd {service['path']} && {self.python_executable} -m pip install -r requirements.txt"))
+                
+                print()
+        
+        print(Colors.green("所有依赖安装检查完成"))
+        input(Colors.blue("按回车键继续..."))
+    
+    def check_repository_status(self, service_key):
+        """检查指定仓库的commit状态（支持Token认证）"""
+        if service_key not in self.services:
+            print(Colors.red(f"未找到服务: {service_key}"))
+            return
+            
+        service = self.services[service_key]
+        repo_path = service["path"]
+        repo_name = service["name"]
+        
+        if not repo_path.exists():
+            print(Colors.red(f"仓库目录不存在: {repo_path}"))
+            return
+            
+        if not service.get("repo_url"):
+            print(Colors.red(f"{repo_name} 没有配置远程仓库URL"))
+            return
+        
+        print(Colors.bold(f"检查 {repo_name} 仓库状态..."))
+        print(f"路径: {Colors.cyan(str(repo_path))}")
+        print()
+        
+        try:
+            # 切换到仓库目录
+            original_cwd = os.getcwd()
+            os.chdir(repo_path)
+            
+            # 设置环境变量禁用Git交互
+            env = os.environ.copy()
+            env['GIT_TERMINAL_PROMPT'] = '0'  # 禁用终端提示
+            env['GIT_ASKPASS'] = 'echo'       # 禁用密码提示
+            env['SSH_ASKPASS'] = 'echo'       # 禁用SSH密码提示
+            env['GCM_INTERACTIVE'] = 'never'  # 禁用Git Credential Manager
+            
+            print(Colors.blue("正在获取远程仓库更新..."))
+            
+            # 获取远程更新
+            fetch_result = subprocess.run(
+                ["git", "fetch", "origin"], 
+                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+            )
+            
+            if fetch_result.returncode != 0:
+                print(Colors.red(f"获取远程更新失败: {fetch_result.stderr}"))
+                print(Colors.yellow("提示：可能因为网络限制导致失败"))
+                return
+            else:
+                print(Colors.green("✅ 成功获取远程更新"))
+            
+            # 获取当前分支
+            branch_result = subprocess.run(
+                ["git", "branch", "--show-current"], 
+                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+            )
+            current_branch = branch_result.stdout.strip() or "master"
+            
+            # 检查本地与远程的差异
+            log_result = subprocess.run(
+                ["git", "log", f"HEAD..origin/{current_branch}", "--oneline"], 
+                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+            )
+            
+            if log_result.returncode != 0:
+                print(Colors.red(f"检查commit差异失败: {log_result.stderr}"))
+                return
+            
+            commits_behind = log_result.stdout.strip()
+            
+            if not commits_behind:
+                print(Colors.green("✅ 仓库已是最新状态，没有落后的commit"))
+            else:
+                commit_lines = commits_behind.split('\n')
+                commit_count = len(commit_lines)
+                
+                print(Colors.yellow(f"你的本地仓库落后了 {commit_count} 个commit"))
+                print()
+                print(Colors.bold("落后的commit详情："))
+                print("-" * 50)
+                
+                for i, commit_line in enumerate(commit_lines, 1):
+                    if commit_line.strip():
+                        commit_hash = commit_line.split()[0]
+                        commit_message = ' '.join(commit_line.split()[1:])
+                        print(f"{Colors.cyan(f'{i:2d}.')} {Colors.yellow(commit_hash)} {commit_message}")
+                
+                print("-" * 50)
+                
+                # 显示详细的commit信息
+                print()
+                print(Colors.bold("详细的commit信息："))
+                print("=" * 60)
+                
+                detail_result = subprocess.run(
+                    ["git", "log", f"HEAD..origin/{current_branch}", "--pretty=format:%h - %an, %ar : %s", "-10"], 
+                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+                )
+                
+                if detail_result.returncode == 0 and detail_result.stdout.strip():
+                    for line in detail_result.stdout.strip().split('\n'):
+                        if line.strip():
+                            parts = line.split(' - ', 1)
+                            if len(parts) == 2:
+                                commit_hash = parts[0]
+                                rest = parts[1]
+                                print(f"{Colors.green(commit_hash)} - {rest}")
+                
+                print("=" * 60)
+                
+        except Exception as e:
+            print(Colors.red(f"检查仓库状态时发生错误: {e}"))
+        finally:
+            # 恢复原始工作目录
+            os.chdir(original_cwd)
+        
+        print()
     
     def _restart_program(self):
         """重启程序"""
