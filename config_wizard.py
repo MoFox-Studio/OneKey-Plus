@@ -2,6 +2,7 @@
 import tomlkit
 import os
 import re
+import json
 from collections.abc import MutableMapping
 
 # --- 路径定义 ---
@@ -67,6 +68,9 @@ BOT_CONFIG_COMMENTS = {
         'schedule_enable': "是否让 Bot 每天自动生成日程表？填 true 或 false。",
         'monthly_plan_enable': "是否让 Bot 每月自动生成计划？填 true 或 false。"
     },
+    'video_analysis': {
+        'enable': "要不要让 Bot 拥有识别和理解视频内容的能力？（需要 FFmpeg 支持）(记得一会在下面的适配器那里打开)填 true 或 false。"
+    },
     'sleep_system': {
         'enable': "是否启用睡眠系统？开启后 Bot 会在指定时间“睡觉”，期间不会回复。填 true 或 false。",
         'sleep_by_schedule': "是严格按照日程表的时间睡觉，还是使用下面固定的时间？填 true 或 false。",
@@ -93,6 +97,7 @@ NAPCAT_CONFIG_COMMENTS = {
         'enable_reply_at': "回复消息的时候，要不要顺便@一下那个人？填 true 或 false。",
         'reply_at_rate': "有多大的概率会@他呢？填一个 0.0 到 1.0 之间的小数。",
         'enable_emoji_like': "看到有趣的消息，Bot 会不会点个赞（发个表情回应）？填 true 或 false。",
+        'enable_video_analysis': "要不要让 Bot 试着理解视频内容？（会消耗更多资源哦）填 true 或 false。",
     }
 }
 
@@ -351,10 +356,106 @@ def configure_napcat_adapter():
         print(f"处理 `napcat_adapter_config.toml` 时发生未知错误：{e}")
 
 
+def auto_configure_onebot_for_napcat():
+    """
+    静默检查并为 Napcat-Adapter 自动配置 OneBot v11 的 JSON 文件。
+    - 仅在配置文件不存在时创建。
+    - 创建的配置文件默认启用 WS 客户端。
+    - 整个过程无用户交互。
+    """
+    try:
+        # 1. 先获取 QQ 账号
+        qq_account = None
+        if os.path.exists(BOT_CONFIG_PATH):
+            with open(BOT_CONFIG_PATH, 'r', encoding='utf-8') as f:
+                bot_config = tomlkit.load(f)
+                qq_account = bot_config.get('bot', {}).get('qq_account')
+
+        if not qq_account:
+            return # 没有 QQ 号，静默退出
+
+        # 2. 确定 Napcat 内的配置文件路径
+        napcat_config_dir = os.path.join(BASE_DIR, 'core' ,'Napcat', 'config')
+        onebot_config_path = os.path.join(napcat_config_dir, f'onebot11_{qq_account}.json')
+
+        # 3. 如果文件已存在，则不做任何操作
+        if os.path.exists(onebot_config_path):
+            return
+
+        # 4. 创建目录（如果需要）
+        os.makedirs(napcat_config_dir, exist_ok=True)
+
+        # 5. 定义默认配置并写入文件
+        default_config = {
+            "network": {
+                "httpServers": [],
+                "httpClients": [],
+                "websocketServers": [],
+                "websocketClients": [
+                    {
+                        "name": "MoFox-Bot-clinet",
+                        "enable": True,  # 默认启用
+                        "url": "ws://localhost:8095",
+                        "messagePostFormat": "array",
+                        "reportSelfMessage": False,
+                        "reconnectInterval": 5000,
+                        "token": "",
+                        "debug": False,
+                        "heartInterval": 30000,
+                    }
+                ]
+            },
+            "musicSignUrl": "",
+            "enableLocalFile2Url": False,
+            "parseMultMsg": False
+        }
+        
+        with open(onebot_config_path, 'w', encoding='utf-8') as f:
+            json.dump(default_config, f, indent=4, ensure_ascii=False)
+        
+        print(f"已为 Napcat 自动创建 OneBot 配置文件: {os.path.basename(onebot_config_path)}")
+
+    except Exception:
+        # 发生任何错误都静默失败，不影响主流程
+        pass
+
+
+def auto_configure_ffmpeg():
+    """自动检测并配置 FFmpeg 路径。"""
+    config_changed = False
+    try:
+        with open(BOT_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            config = tomlkit.load(f)
+
+        ffmpeg_dir = os.path.join(BASE_DIR, "core" , 'ffmpeg', 'bin')
+        ffmpeg_path_str = ffmpeg_dir.replace('\\', '/')
+
+        if os.path.isdir(ffmpeg_dir):
+            video_analysis_config = config.get('video_analysis')
+            if video_analysis_config and isinstance(video_analysis_config, MutableMapping):
+                current_path = video_analysis_config.get('ffmpeg_path')
+                if current_path != ffmpeg_path_str:
+                    print(f"检测到 FFmpeg 目录，自动配置路径为: {ffmpeg_path_str}")
+                    video_analysis_config['ffmpeg_path'] = ffmpeg_path_str
+                    config_changed = True
+        else:
+            print(f"警告：未在 {ffmpeg_dir} 找到 FFmpeg 目录，视频分析功能可能无法使用。")
+
+        if config_changed:
+            with open(BOT_CONFIG_PATH, 'w', encoding='utf-8') as f:
+                tomlkit.dump(config, f)
+
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"自动配置 FFmpeg 时发生错误：{e}")
+
+
 if __name__ == "__main__":
     if not check_eula():
         input("按 Enter 键退出...")
     else:
+        auto_configure_ffmpeg()  # 在向导开始前自动配置
         print("\n")
         print("="*60)
         print("欢迎使用 MoFox-Bot 配置向导！")
@@ -365,6 +466,7 @@ if __name__ == "__main__":
         configure_bot()
         configure_model()
         configure_napcat_adapter()
+        auto_configure_onebot_for_napcat()
         print("\n\n==============================================")
         print("所有配置已完成！现在你可以启动主程序了。")
         print("==============================================")
