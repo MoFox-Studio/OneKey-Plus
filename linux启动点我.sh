@@ -10,8 +10,61 @@ echo "========================================"
 echo
 
 # 切换到脚本所在目录
+CALL_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+SCRIPT_FILENAME="onekey_linux.py"
+SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_FILENAME"
+
+# 解析可选参数
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -s|--script-path)
+            shift
+            if [ -z "$1" ]; then
+                echo "❌ 错误：参数 -s/--script-path 需要指定 $SCRIPT_FILENAME 的路径！"
+                echo
+                read -p "按任意键退出..."
+                exit 1
+            fi
+            ARG_TARGET="$1"
+            if [[ "$ARG_TARGET" != /* ]]; then
+                ARG_TARGET="$CALL_DIR/$ARG_TARGET"
+            fi
+            if [ -d "$ARG_TARGET" ]; then
+                ARG_TARGET="${ARG_TARGET%/}/$SCRIPT_FILENAME"
+            fi
+            if [ "$(basename "$ARG_TARGET")" != "$SCRIPT_FILENAME" ]; then
+                echo "❌ 错误：指定路径必须指向 $SCRIPT_FILENAME！"
+                echo
+                read -p "按任意键退出..."
+                exit 1
+            fi
+            if ! ARG_DIR="$(cd "$(dirname "$ARG_TARGET")" 2>/dev/null && pwd)"; then
+                echo "❌ 错误：无法解析脚本路径：$ARG_TARGET"
+                echo
+                read -p "按任意键退出..."
+                exit 1
+            fi
+            SCRIPT_PATH="$ARG_DIR/$SCRIPT_FILENAME"
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -* )
+            echo "❌ 错误：未知参数：$1"
+            echo
+            read -p "按任意键退出..."
+            exit 1
+            ;;
+        * )
+            break
+            ;;
+    esac
+done
 
 # 检测是否在临时目录中运行
 CURRENT_PATH="$(pwd)"
@@ -33,11 +86,12 @@ if [ "$IN_ARCHIVE" -eq 1 ]; then
 fi
 
 # 检查关键文件是否存在
-if [ ! -f "onekey_linux.py" ]; then
-    echo "❌ 错误：未找到onekey_linux.py文件！"
+if [ ! -f "$SCRIPT_PATH" ]; then
+    echo "❌ 错误：未找到 $SCRIPT_FILENAME 文件！"
     echo
-    echo "请确保此脚本位于MaiBot-Plus项目根目录中"
+    echo "请确保此脚本位于MaiBot-Plus项目根目录中，或通过 -s/--script-path 参数指定 $SCRIPT_FILENAME 文件路径"
     echo "当前目录：$SCRIPT_DIR"
+    echo "尝试的脚本路径：$SCRIPT_PATH"
     echo
     read -p "按任意键退出..."
     exit 1
@@ -53,7 +107,7 @@ echo "检查运行环境..."
 if [ ! -f "$PYTHON_PATH" ]; then
     echo "❌ 虚拟环境未找到！"
     echo
-    echo "请先运行 \"./首次启动点我.sh\" 初始化环境"
+    echo "请先运行 \"./linux首次启动点我.sh\" 初始化环境"
     echo
     read -p "按任意键退出..."
     exit 1
@@ -62,7 +116,7 @@ fi
 if [ ! -f "$DEPS_CHECK_FILE" ]; then
     echo "❌ 依赖未安装！"
     echo
-    echo "请先运行 \"./首次启动点我.sh\" 安装依赖"
+    echo "请先运行 \"./linux首次启动点我.sh\" 安装依赖"
     echo
     read -p "按任意键退出..."
     exit 1
@@ -74,7 +128,7 @@ echo "启动 MaiBot-Plus 管理程序..."
 echo "========================================"
 
 # 启动onekey_linux.py
-"$PYTHON_PATH" onekey_linux.py
+"$PYTHON_PATH" "$SCRIPT_PATH"
 EXIT_CODE=$?
 
 # 如果程序异常退出，显示错误信息
@@ -84,7 +138,7 @@ if [ $EXIT_CODE -ne 0 ]; then
     echo "程序异常退出，错误代码：$EXIT_CODE"
     echo
     echo "如果遇到依赖问题，请重新运行："
-    echo "   \"./首次启动点我.sh\""
+    echo "   \"./linux首次启动点我.sh\""
     echo "========================================"
 fi
 
