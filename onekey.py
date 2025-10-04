@@ -112,6 +112,7 @@ class MaiBotManager:
         print(Colors.yellow("其他功能："))
         print("  7. 安装/更新依赖包")
         print("  8. 查看系统信息")
+        print("  11. 启动知识库学习工具")
         print()
         print(Colors.magenta("配置管理："))
         print("  9. 打开配置文件")
@@ -408,6 +409,30 @@ class MaiBotManager:
         )
         print(f"  内置Python环境: {python_status}")
 
+    def start_learning_tool(self):
+        """启动知识库学习工具"""
+        script_path = self.base_path / "core" / "Bot" / "scripts" / "lpmm_learning_tool.py"
+        if not script_path.exists():
+            print(Colors.red(f"❌ 学习工具脚本未找到: {script_path}"))
+            return
+
+        print(Colors.blue("正在启动知识库学习工具..."))
+        try:
+            powershell_cmd = [
+                "powershell.exe",
+                "-NoExit",
+                "-Command",
+                f"chcp 65001; Set-Location '{script_path.parent}'; & '{self.python_executable}' '{script_path.name}'",
+            ]
+            subprocess.Popen(
+                powershell_cmd,
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                cwd=script_path.parent,
+            )
+            print(Colors.green("✅ 知识库学习工具已在新窗口启动"))
+        except Exception as e:
+            print(Colors.red(f"❌ 启动知识库学习工具失败: {e}"))
+
     def run(self):
         while True:
             self.clear_screen()
@@ -427,6 +452,7 @@ class MaiBotManager:
                     "8": self.show_system_info,
                     "9": self.open_config_file,
                     "10": self.modify_permission_settings,
+                    "11": self.start_learning_tool,
                 }
 
                 if choice == "0":
