@@ -64,7 +64,8 @@ NAPCAT_CONFIG_COMMENTS = {
         'group_list_type': "群聊的准入模式：'whitelist' - 只在名单上的群里说话, 'blacklist' - 除了名单上的群，其他都说话。",
         'group_list': "把要加入白名单或黑名单的群号都扔到这里，用逗号或空格隔开。",
         'private_list_type': "私聊也一样：'whitelist' - 只回复名单上的人, 'blacklist' - 除了名单上的人，都回复。",
-        'private_list': "把要加入白名单或黑名单的用户 QQ 号都扔到这里，用逗号或空格隔开。"
+        'private_list': "把要加入白名单或黑名单的用户 QQ 号都扔到这里，用逗号或空格隔开。",
+        'enable_video_analysis': "是否允许适配器处理视频文件？（这会消耗更多资源，需要主配置和适配器同时开启）"
     }
 }
 
