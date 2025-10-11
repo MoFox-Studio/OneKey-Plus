@@ -21,9 +21,12 @@ echo %CURRENT_PATH% | findstr /i "zip$" >nul && set "IN_ARCHIVE=1"
 echo %CURRENT_PATH% | findstr /i "7z$" >nul && set "IN_ARCHIVE=1"
 
 if "%IN_ARCHIVE%"=="1" (
-    echo [ERROR] 检测到脚本在临时解压目录中运行！
     echo.
-    echo         请先将程序完整解压到磁盘上的某个文件夹后再运行。
+    echo  你妈的, 是不是脑子有什么大病?
+    echo.
+    echo  在压缩包里直接点? 你当这是你家客厅啊, 想怎么来就怎么来?
+    echo.
+    echo  赶紧给老子滚去解压, 不然我顺着网线过去给你两拳!
     echo.
     pause >nul
     exit /b 1
