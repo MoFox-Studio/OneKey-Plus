@@ -24,58 +24,34 @@ BOT_CONFIG_COMMENTS = {
     },
     'bot': {
         'qq_account': "Bot 要用哪个 QQ 号登录？填在这里。",
-        'nickname': "给你的 Bot 起个好听的名字吧！",
-        'alias_names': "再给 Bot 起几个小名，方便大家称呼。多个用逗号或空格隔开。"
-    },
-    'personality': {
-        'personality_core': "一句话描述 Bot 的核心性格，比如“一个傲娇的猫娘”。",
-        'identity': "详细描述一下 Bot 的设定，比如年龄、性别、外貌等等。",
-        'background_story': "如果你想给 Bot 设定更复杂的背景故事，可以在这里写。",
-        'reply_style': "定义 Bot 的说话风格，让它更符合你的想象。"
+        'nickname': "给你的 Bot 起个好听的名字吧！"
     },
     'expression': {
-        'use_expression': "是否让 Bot 学习并使用新的说话方式？填 true 或 false。",
-        'learn_expression': "是否允许 Bot 从聊天中学习新的表达方式？填 true 或 false。"
+        'use_expression': "是否让 Bot 在全局范围内使用它学到的新说话方式？填 true 或 false。",
+        'learn_expression': "是否允许 Bot 在全局范围内从聊天中学习新的表达方式？填 true 或 false。"
     },
-    'chat': {
-        'group_chat_mode': "在群里,Bot 应该是什么样的聊天模式?'auto' - 智能切换,'normal' - 普通模式,'focus' - 专注模式。",
-        'talk_frequency': "调整 Bot 的话痨程度,数值越高,它就越活跃。",
-        'enable_proactive_thinking': "是否允许 Bot 在没人理它的时候主动找话题? 填 true 或 false。",
-        'proactive_thinking_interval': "Bot 主动思考一次后,大概要等多久(秒)才会再次主动思考?",
-        'proactive_thinking_enable_in_private': "在这里添加允许 Bot 主动思考的私聊 QQ 号(多个用逗号或空格隔开)。",
-        'proactive_thinking_enable_in_groups': "在这里添加允许 Bot 主动思考的QQ群号(多个用逗号或空格隔开)。"
+    'affinity_flow': {
+        'reply_action_interest_threshold': "设置一个“回复”的兴趣门槛(0.0-1.0)。只有当 Bot 对话题的兴趣超过这个值，它才会回复。",
+        'non_reply_action_interest_threshold': "设置一个“做小动作”(如搓一搓你)的兴趣门槛(0.0-1.0)。"
     },
-    'anti_prompt_injection': {
-        'enabled': "是否开启防御模式，防止别人对你的 Bot 进行“催眠”或“洗脑”？填 true 或 false。(但是会拖慢消息处理速度)"
-    },
-    'mood': {
-        'enable_mood': "是否让 Bot 拥有自己的情绪？开启后，它的心情会根据聊天内容变化。填 true 或 false。"
-    },
-    'emoji': {
-        'emoji_chance': "Bot 有多大的概率会发表情包？(0.0 到 1.0 之间的小数)",
-        'steal_emoji': "是否允许 Bot“偷”群友的表情包自己用？填 true 或 false。"
-    },
-    'memory': {
-        'enable_memory': "是否让 Bot 拥有记忆力，能记住和大家的聊天内容？填 true 或 false。",
-    },
-    'web_search': {
-        'enable_web_search_tool': "是否允许 Bot 上网查资料？填 true 或 false。",
-        'enabled_engines': "你想启用哪些搜索引擎？可选 'ddg', 'bing', 'exa', 'tavily'。多个用逗号隔开。",
-        'tavily_api_keys': "如果你要用 Tavily，在这里填上你的 API Key。多个 Key 用逗号或空格隔开。",
-        'exa_api_keys': "同上，这是 EXA 搜索引擎的 API Key。多个 Key 用逗号或空格隔开。"
+    'proactive_thinking': {
+        'enable': "是否允许 Bot 在没人理它的时候主动找话题？填 true 或 false。",
+        'enabled_private_chats': "在这里添加允许 Bot 主动找话题的私聊 QQ 号 (多个用逗号或空格隔开)。",
+        'enabled_group_chats': "在这里添加允许 Bot 主动找话题的 QQ 群号 (多个用逗号或空格隔开)。"
     },
     'planning_system': {
         'schedule_enable': "是否让 Bot 每天自动生成日程表？填 true 或 false。",
         'monthly_plan_enable': "是否让 Bot 每月自动生成计划？填 true 或 false。"
     },
-    'video_analysis': {
-        'enable': "要不要让 Bot 拥有识别和理解视频内容的能力？（需要 FFmpeg 支持）(记得一会在下面的适配器那里打开)填 true 或 false。"
+    'cross_context': {
+        'enable': "是否启用跨群聊/私聊的上下文共享功能？这能让 Bot 在不同聊天窗口里“串戏”。"
     },
-    'sleep_system': {
-        'enable': "是否启用睡眠系统？开启后 Bot 会在指定时间“睡觉”，期间不会回复。填 true 或 false。",
-        'sleep_by_schedule': "是严格按照日程表的时间睡觉，还是使用下面固定的时间？填 true 或 false。",
-        'fixed_sleep_time': "如果不用日程表，Bot 每天几点睡觉？格式：HH:MM，例如 '23:00'。",
-        'fixed_wake_up_time': "如果不用日程表，Bot 每天几点起床？格式：HH:MM，例如 '07:00'。"
+    'video_analysis': {
+        'enable': "要不要让 Bot 拥有识别和理解视频内容的能力？（需要 FFmpeg 支持）填 true 或 false。"
+    },
+    'web_search': {
+        'tavily_api_keys': "如果你要用 Tavily 搜索引擎，在这里填上你的 API Key。多个用逗号或空格隔开。",
+        'exa_api_keys': "同上，这是 EXA 搜索引擎的 API Key。多个用逗号或空格隔开。"
     }
 }
 
@@ -85,49 +61,33 @@ NAPCAT_CONFIG_COMMENTS = {
         'enabled': "要不要启用 Napcat 适配器？没它 Bot 可没法在 QQ 里说话哦。填 true 或 false。"
     },
     'features': {
-        'group_list_type': "群聊是只听白名单的话 (whitelist)，还是把黑名单的家伙都赶出去 (blacklist)？",
+        'group_list_type': "群聊的准入模式：'whitelist' - 只在名单上的群里说话, 'blacklist' - 除了名单上的群，其他都说话。",
         'group_list': "把要加入白名单或黑名单的群号都扔到这里，用逗号或空格隔开。",
-        'private_list_type': "私聊也一样，是白名单模式 (whitelist) 还是黑名单模式 (blacklist)？",
-        'private_list': "把要加入白名单或黑名单的用户 QQ 号都扔到这里，用逗号或空格隔开。",
-        'ban_user_id': "有没有特别讨厌的家伙？把他们的 QQ 号放这里，Bot 就会永远无视他们。",
-        'ban_qq_bot': "要不要屏蔽其他 QQ 官方机器人？免得机器人之间聊起来没完没了。填 true 或 false。",
-        'enable_poke': "有人戳 Bot 的时候，要不要让它回应一下？填 true 或 false。",
-        'ignore_non_self_poke': "只回应戳自己的，还是别人互相戳也凑热闹？填 true 或 false。",
-        'poke_debounce_seconds': "设置一个冷静期（秒），防止有人一直戳戳戳，烦死啦。",
-        'enable_reply_at': "回复消息的时候，要不要顺便@一下那个人？填 true 或 false。",
-        'reply_at_rate': "有多大的概率会@他呢？填一个 0.0 到 1.0 之间的小数。",
-        'enable_emoji_like': "看到有趣的消息，Bot 会不会点个赞（发个表情回应）？填 true 或 false。",
-        'enable_video_analysis': "要不要让 Bot 试着理解视频内容？（会消耗更多资源哦）填 true 或 false。",
+        'private_list_type': "私聊也一样：'whitelist' - 只回复名单上的人, 'blacklist' - 除了名单上的人，都回复。",
+        'private_list': "把要加入白名单或黑名单的用户 QQ 号都扔到这里，用逗号或空格隔开。"
     }
 }
 
 
-def update_comment(table, key, comment_text):
-    """智能更新或添加注释，保留原有注释。"""
-    if key in table and hasattr(table, 'item'):
-        item = table.item(key)
-        if item is None: return
-
-        # 使用 trivia 获取注释信息
-        existing_comment = item.trivia.comment
-        
-        # 避免重复添加完全相同的注释
-        if comment_text and (not existing_comment or comment_text not in existing_comment):
-            new_comment = f" {comment_text}" # 加个空格美观一些
-            
-            # tomlkit 的注释是整个替换的，所以需要拼接
-            full_comment = (existing_comment.strip() + " |" + new_comment) if existing_comment else new_comment
-            item.comment(full_comment.strip())
-
 def ask_for_config(config, comments, parent_key=''):
     """递归地向用户询问配置项。"""
+    # 特殊处理：表达学习规则 (expression.rules)
     if parent_key == 'expression' and 'rules' in config:
         print("\n--- 正在配置 [expression] (表达学习规则) ---")
+        # 先处理全局规则
+        global_rule = next((r for r in config['rules'] if r.get('chat_stream_id') == ""), None)
+        if global_rule:
+            print("\n--- 编辑全局规则 ---")
+            ask_for_config(global_rule, comments, parent_key='expression_rule')
+
+        # 再处理其他特定规则
         for i, rule in enumerate(config['rules']):
-            rule_id = rule.get('chat_stream_id') or "全局规则"
-            print(f"\n--- 编辑规则 {i+1}: {rule_id} ---")
+            if rule.get('chat_stream_id') == "": continue
+            rule_id = rule.get('chat_stream_id')
+            print(f"\n--- 编辑现有规则: {rule_id} ---")
             ask_for_config(rule, comments, parent_key='expression_rule')
-        
+
+        # 询问是否添加新规则
         while True:
             add_new = input("\n是否要为特定群聊或私聊添加新的表达学习规则? (y/n): ").strip().lower()
             if add_new == 'y':
@@ -146,65 +106,97 @@ def ask_for_config(config, comments, parent_key=''):
                 break
         return
 
+    # 特殊处理：跨上下文组 (cross_context.groups)
+    if parent_key == 'cross_context' and 'groups' in config:
+        print("\n--- 正在配置 [cross_context] (跨聊天上下文共享) ---")
+        for i, group in enumerate(config['groups']):
+            group_name = group.get('name', f"组 {i+1}")
+            print(f"\n--- 编辑现有互通组: '{group_name}' ---")
+            print(f"   当前成员: {group.get('chat_ids', [])}")
+            new_ids_str = input("   请输入要添加到该组的新成员 (格式: 类型:ID, 例如 group:123,private:456。多个用逗号或空格隔开, 直接回车则不添加): ").strip()
+            if new_ids_str:
+                new_ids = [item.strip().split(':') for item in re.split(r'[\s,]+', new_ids_str) if item.strip() and ':' in item]
+                valid_new_ids = [[t, i] for t, i in new_ids if t in ['group', 'private']]
+                # 去重合并
+                current_set = {tuple(item) for item in group.get('chat_ids', [])}
+                current_set.update(map(tuple, valid_new_ids))
+                group['chat_ids'] = sorted(list(current_set), key=lambda x: x[0])
+                print(f"   '{group_name}' 已更新为: {group['chat_ids']}")
+
+        # 询问是否添加新组
+        while True:
+            add_new = input("\n是否要创建新的聊天互通组? (y/n): ").strip().lower()
+            if add_new == 'y':
+                name = input("请输入新组的名称: ").strip()
+                if name:
+                    new_group = tomlkit.table()
+                    new_group.add('name', name)
+                    new_group.add('chat_ids', tomlkit.array())
+                    config['groups'].append(new_group)
+                    print(f"已创建新组 '{name}'，请在下一轮编辑中向其添加成员。")
+                else:
+                    print("名称不能为空。")
+            else:
+                break
+        return
+
+    # 通用配置处理逻辑
     for key, value in config.items():
-        if key == 'rules' and parent_key == 'expression':
+        # 跳过已特殊处理的列表
+        if (parent_key == 'expression' and key == 'rules') or \
+           (parent_key == 'cross_context' and key == 'groups'):
             continue
 
         current_comments = comments.get(key, {})
         if isinstance(value, MutableMapping):
-            if key in comments:
+            if key in comments: # 只进入在COMMENTS中定义了的配置部分
                 print(f"\n--- 正在配置 [{key}] 部分 ---")
                 ask_for_config(value, current_comments, parent_key=key)
         else:
             comment_key_to_check = key if parent_key != 'expression_rule' else key
             if comment_key_to_check in comments:
                 comment_text = comments[comment_key_to_check]
-                
-                # 特殊处理主动思考的列表
-                if key in ['proactive_thinking_enable_in_private', 'proactive_thinking_enable_in_groups']:
+
+                # 为列表输入提供更方便的交互
+                if key in ['enabled_private_chats', 'enabled_group_chats', 'group_list', 'private_list', 'tavily_api_keys', 'exa_api_keys']:
                     print(f"-> 正在配置 '{key}':")
                     print(f"   说明：{comment_text}")
                     print(f"   当前值：{value}")
                     new_ids_str = input("   请输入要添加的新 ID (多个用逗号或空格隔开, 直接回车则不添加): ").strip()
                     if new_ids_str:
                         import re
-                        new_ids = [f"qq:{item.strip()}" for item in re.split(r'[\s,]+', new_ids_str) if item.strip()]
-                        # 去重合并
-                        current_set = set(value)
-                        current_set.update(new_ids)
-                        config[key] = sorted(list(current_set))
-                        print(f"   '{key}' 已更新为: {config[key]}")
-                    continue # 处理完跳过后面的通用逻辑
-                
-                # 为 Napcat 的黑白名单和 ban_user_id 提供更方便的列表输入
-                if key in ['group_list', 'private_list', 'ban_user_id']:
-                    print(f"-> 正在配置 '{key}':")
-                    print(f"   说明：{comment_text}")
-                    print(f"   当前值：{value}")
-                    new_ids_str = input("   请输入要添加的新 ID (多个用逗号或空格隔开, 直接回车则不添加): ").strip()
-                    if new_ids_str:
-                        import re
-                        # 这里的 ID 是纯数字字符串，不需要 'qq:' 前缀
                         new_ids = [item.strip() for item in re.split(r'[\s,]+', new_ids_str) if item.strip()]
                         # 去重合并
                         current_set = set(value)
                         current_set.update(new_ids)
                         config[key] = sorted(list(current_set))
                         print(f"   '{key}' 已更新为: {config[key]}")
-                    continue # 处理完跳过后面的通用逻辑
+                    continue
 
+                # 通用键值对输入
                 print(f"-> 正在配置 '{key}':")
                 print(f"   说明：{comment_text}")
                 print(f"   当前值：{value}")
-                
+
                 new_value_str = input("   请输入新值 (直接回车则不修改): ").strip()
-                
+
                 if new_value_str:
                     original_type = type(value)
                     try:
                         new_value = None
                         if key == 'master_users':
-                            new_value = [['qq', new_value_str]]
+                            # master_users 的格式是 [['qq', '...']]
+                            current_list = value.tolist() if hasattr(value, 'tolist') else list(value)
+                            current_list.append(['qq', new_value_str])
+                            # 去重
+                            unique_list = []
+                            seen = set()
+                            for item in current_list:
+                                t_item = tuple(item)
+                                if t_item not in seen:
+                                    unique_list.append(item)
+                                    seen.add(t_item)
+                            new_value = unique_list
                         elif original_type == bool:
                             new_value = new_value_str.lower() in ['true', '1', 't', 'y', 'yes']
                         elif original_type == list:
@@ -216,7 +208,7 @@ def ask_for_config(config, comments, parent_key=''):
                             new_value = float(new_value_str)
                         else:
                             new_value = original_type(new_value_str)
-                        
+
                         if new_value is not None:
                             config[key] = new_value
                             print(f"   '{key}' 已更新为: {new_value}")
@@ -224,7 +216,6 @@ def ask_for_config(config, comments, parent_key=''):
                     except (ValueError, TypeError) as e:
                         print(f"   输入格式错误或转换失败！'{key}' 的值类型应为 {original_type.__name__}。错误：{e}。跳过此项。")
 
-                update_comment(config, key, comment_text)
 
 def configure_bot():
     """配置 bot_config.toml 文件。"""
@@ -233,6 +224,7 @@ def configure_bot():
             config = tomlkit.load(f)
 
         print("\n--- 开始配置 `bot_config.toml` ---")
+        print("将引导您配置几个核心选项，其他高级选项请直接编辑文件。")
         ask_for_config(config, BOT_CONFIG_COMMENTS)
 
         with open(BOT_CONFIG_PATH, 'w', encoding='utf-8') as f:
@@ -310,10 +302,7 @@ def configure_model():
                     if api_key:
                         provider['api_key'] = api_key
                         print(f"   SiliconFlow API Key 已更新！")
-                    
-                    # 添加注释
-                    update_comment(provider, 'api_key', "在这里填入你的 SiliconFlow API Key")
-                    break
+                        break
         
         if not found:
             print("未找到 SiliconFlow 的配置项，请检查 `model_config.toml` 文件。")
@@ -470,4 +459,3 @@ if __name__ == "__main__":
         print("\n\n==============================================")
         print("所有配置已完成！现在你可以启动主程序了。")
         print("==============================================")
-        input("按 Enter 键退出...")
