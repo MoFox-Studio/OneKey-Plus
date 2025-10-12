@@ -14,7 +14,6 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
-import threading
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -377,7 +376,7 @@ class MaiBotManager:
                 _, path = config_files[int(choice) - 1]
                 if path.exists():
                     os.startfile(path)
-                    print(Colors.green(f"✅ 已尝试打开"))
+                    print(Colors.green("✅ 已尝试打开"))
                 else:
                     print(Colors.red(f"❌ 配置文件不存在: {path}"))
             except (ValueError, IndexError):

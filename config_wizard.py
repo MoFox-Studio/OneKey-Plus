@@ -296,13 +296,13 @@ def configure_model():
             for provider in api_providers:
                 if provider.get('name') == 'SiliconFlow':
                     found = True
-                    print(f"-> 正在配置 'SiliconFlow' API Key:")
+                    print("-> 正在配置 'SiliconFlow' API Key:")
                     print(f"   当前值: {provider.get('api_key')}")
                     
                     api_key = input("   请输入你的 SiliconFlow API Key(如果没有可以在https://cloud.siliconflow.cn/expensebill这里注册) (直接回车则不修改): ").strip()
                     if api_key:
                         provider['api_key'] = api_key
-                        print(f"   SiliconFlow API Key 已更新！")
+                        print("   SiliconFlow API Key 已更新！")
                         break
         
         if not found:

@@ -6,7 +6,7 @@ import io
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -154,14 +154,14 @@ class Updater:
                 sys.stdout.flush()
                 self.run_command_with_env(['git', 'checkout', '-b', branch, f'origin/{branch}'], cwd=repo_path, env=env)
 
-            print(Colors.cyan(f"正在从 origin 拉取最新内容..."))
+            print(Colors.cyan("正在从 origin 拉取最新内容..."))
             sys.stdout.flush()
             pull_success, _ = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env)
             
             if pull_success:
                 return True
             else:
-                print(Colors.red(f"仓库更新失败。"))
+                print(Colors.red("仓库更新失败。"))
                 return False
         except Exception as e:
             print(Colors.red(f"仓库更新出错: {e}"))
