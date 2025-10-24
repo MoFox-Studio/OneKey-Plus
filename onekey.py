@@ -62,6 +62,49 @@ class Colors:
 
 
 class MaiBotManager:
+    def is_bot_initialized(self):
+        """判断MoFox_Bot主程序是否已初始化（即core/Bot目录和.git存在）"""
+        bot_path = self.base_path / "core" / "Bot"
+        git_path = bot_path / ".git"
+        return bot_path.exists() and git_path.exists()
+
+    def switch_bot_branch(self):
+        """切换MoFox_Bot主程序分支（dev/master），仅初始化后可用"""
+        bot_path = self.base_path / "core" / "Bot"
+        if not self.is_bot_initialized():
+            print(Colors.red("❌ Bot主程序未初始化，无法切换分支！请先完成初始化。"))
+            input("按回车键返回主菜单...")
+            return
+        while True:
+            self.clear_screen()
+            print(Colors.bold("切换MoFox_Bot主程序分支"))
+            print("  1. 切换到 master 分支")
+            print("  2. 切换到 dev 分支")
+            print("  0. 返回主菜单")
+            choice = input(Colors.bold("请选择操作 (0-2): ")).strip()
+            if choice == "0":
+                break
+            elif choice in ("1", "2"):
+                branch = "master" if choice == "1" else "dev"
+                print(Colors.blue(f"正在切换到 {branch} 分支..."))
+                # 拉取最新分支
+                cmds = [
+                    ["git", "fetch", "origin"],
+                    ["git", "checkout", branch],
+                    ["git", "pull", "origin", branch],
+                ]
+                for cmd in cmds:
+                    success, output = self.run_command(cmd, cwd=bot_path, show_output=False)
+                    if not success:
+                        print(Colors.red(f"❌ 命令 {' '.join(cmd)} 执行失败：\n{output}"))
+                        break
+                else:
+                    print(Colors.green(f"✅ 已切换到 {branch} 分支并拉取最新代码。"))
+                input("按回车键返回...")
+                break
+            else:
+                print(Colors.red("无效选择"))
+                input("按回车键继续...")
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
@@ -111,6 +154,7 @@ class MaiBotManager:
         print(Colors.yellow("其他功能："))
         print("  7. 安装/更新依赖包")
         print("  8. 查看系统信息")
+        print("  12. 切换Bot主程序分支")
         print("  11. 启动知识库学习工具")
         print()
         print(Colors.magenta("配置管理："))
@@ -449,6 +493,7 @@ class MaiBotManager:
                     "6": self.start_sqlite_studio,
                     "7": self.install_requirements,
                     "8": self.show_system_info,
+                    "12": self.switch_bot_branch,
                     "9": self.open_config_file,
                     "10": self.modify_permission_settings,
                     "11": self.start_learning_tool,
