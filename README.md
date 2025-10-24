@@ -1,21 +1,21 @@
-# MaiBot-Plus 一键管理程序
+# MoFox-Plus 一键管理程序
 
 ## 📖 项目概述
 
-MaiBot-Plus 一键管理程序是一个强大的Python管理工具，专为简化多服务机器人系统的部署、运行和维护而设计。该程序提供了友好的命令行界面，支持一键启动、更新和管理多个相关服务。
+MoFox-Plus 一键管理程序是一个强大的Python管理工具，专为简化多服务机器人系统的部署、运行和维护而设计。该程序提供了友好的命令行界面，支持一键启动、更新和管理多个相关服务。
 
 ## ✨ 主要功能
 
 ### 🚀 服务管理
-- **多服务启动**: 支持启动 MaiBot 主程序、Napcat Adapter、Matcha Adapter、Napcat 服务和 Matcha 程序
+- **多服务启动**: 支持启动 MoFox 主程序、Napcat Adapter、Matcha Adapter、Napcat 服务和 Matcha 程序
 - **服务组合**: 提供预配置的服务组合，一键启动完整的机器人解决方案
-  - QQ机器人组合：MaiBot + Napcat Adapter + Napcat服务
-  - Matcha机器人组合：MaiBot + Matcha Adapter + Matcha程序
+  - QQ机器人组合：MoFox + Napcat Adapter + Napcat服务
+  - Matcha机器人组合：MoFox + Matcha Adapter + Matcha程序
 - **状态监控**: 实时查看所有服务的运行状态和进程信息
 - **安全停止**: 一键安全停止所有正在运行的服务
 
 ### 🔄 版本控制与更新
-- **GitHub集成**: 支持私有仓库的自动更新，使用安全的Token认证
+- **GitHub集成**: 支持私有仓库的自动更新
 - **智能更新**: 自动检测本地与远程仓库的差异，显示落后的commit信息
 - **依赖管理**: 更新仓库后自动安装/更新相关依赖包
 - **批量更新**: 支持一键更新所有关联仓库
@@ -30,7 +30,7 @@ MaiBot-Plus 一键管理程序是一个强大的Python管理工具，专为简�
 
 | 服务名称 | 类型 | 描述 | 仓库地址 |
 |---------|------|------|----------|
-| MaiBot 主程序 | Python | AI聊天机器人核心程序 | MaiBot-Plus/MaiMbot-Pro-Max |
+| MoFox 主程序 | Python | AI聊天机器人核心程序 | MoFox-Plus/MoFox-bot |
 | Napcat Adapter | Python | QQ消息适配器 | MaiBot-Plus/Napcat-Adapter |
 | Matcha Adapter | Python | Matcha消息适配器 | MaiBot-Plus/Matcha-Adapter |
 | Napcat 服务 | Batch | QQ协议服务 | 本地服务 |
@@ -39,7 +39,7 @@ MaiBot-Plus 一键管理程序是一个强大的Python管理工具，专为简�
 ## 📋 系统要求
 
 - **操作系统**: Windows (支持PowerShell和CMD)
-- **Python**: 3.7+ (建议使用虚拟环境)
+- **Python**: 3.11+ (建议使用虚拟环境)
 - **Git**: 用于仓库管理和更新
 - **网络**: 需要稳定的网络连接以进行仓库更新
 
@@ -58,6 +58,7 @@ python -m venv .venv
 
 ### 2. 运行程序
 ```bash
+
 # 直接运行
 python onekey.py
 
@@ -94,13 +95,13 @@ python onekey.py
 
 #### QQ机器人组合
 适用于QQ平台的完整机器人解决方案：
-- MaiBot主程序：提供AI对话能力
+- MoFox主程序：提供AI对话能力
 - Napcat Adapter：处理QQ消息协议转换
 - Napcat服务：连接QQ客户端
 
 #### Matcha机器人组合
 适用于Matcha平台的完整机器人解决方案：
-- MaiBot主程序：提供AI对话能力
+- MoFox主程序：提供AI对话能力
 - Matcha Adapter：处理Matcha消息协议转换
 - Matcha程序：Matcha客户端连接
 
@@ -169,4 +170,4 @@ A: 确保在项目根目录下存在`.venv`文件夹，或手动创建虚拟环�
 
 ---
 
-*MaiBot-Plus 一键管理程序 - 让机器人部署变得简单高效* 🤖✨
+*MoFox-Plus 一键管理程序 - 让机器人部署变得简单高效* 🤖✨
