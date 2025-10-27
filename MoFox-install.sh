@@ -262,7 +262,7 @@ install_package() {    #定义函数
         $SUDO apk add gcc musl-dev linux-headers "$package" #安装包
         ;;
     brew)
-        $SUDO install "$package" #安装包
+        $SUDO brew install "$package" #安装包
         ;;
     *)
         warn "未知包管理器 $PKG_MANAGER，请手动安装 $package" #打印警告
