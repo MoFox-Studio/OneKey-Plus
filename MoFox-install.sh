@@ -437,7 +437,7 @@ install_python_dependencies() {
 
     if [[ -f "template/bot_config_template.toml" ]]; then
         cp "template/bot_config_template.toml" "config/bot_config.toml"
-        ok "已复制 bot_config_template.toml"
+        ok "已复制 bot_config.toml"
     else
         warn "未找到 template/bot_config_template.toml"
     fi
