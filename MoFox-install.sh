@@ -456,8 +456,18 @@ download_script() {
     chmod +x "$TARGET_FILE"
     ok "mofox 脚本已下载到 $TARGET_FILE"
 
-    # 软链到 /usr/local/bin 方便全局调用
-    $SUDO ln -sf "$TARGET_FILE" /usr/local/bin/mofox
+    # 检查 /usr/local/bin 是否可写，否则软链到 ~/.local/bin
+    if [ -w /usr/local/bin ] || [ "$(id -u)" -eq 0 ]; then
+        $SUDO ln -sf "$TARGET_FILE" /usr/local/bin/mofox
+        ok "已创建软链到 /usr/local/bin/mofox"
+    else
+        # fallback to ~/.local/bin
+        local LOCAL_BIN_DIR="$HOME/.local/bin"
+        mkdir -p "$LOCAL_BIN_DIR"
+        ln -sf "$TARGET_FILE" "$LOCAL_BIN_DIR/mofox"
+        ok "无权限写入 /usr/local/bin，已创建软链到 $LOCAL_BIN_DIR/mofox"
+        ok "请确保 $LOCAL_BIN_DIR 已加入 PATH"
+    fi
 
     # 直接写 path.conf 到用户目录，不用初始化
     echo "$DEPLOY_DIR" >"$TARGET_DIR/path.conf"
