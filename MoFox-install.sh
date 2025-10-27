@@ -390,7 +390,7 @@ install_python_dependencies() {
     # 配置 uv 镜像源
     export UV_INDEX_URL="https://mirrors.ustc.edu.cn/pypi/simple/"
     mkdir -p ~/.cache/uv
-    chown -R "$(whoami):$(whoami)" ~/.cache/uv
+    chown -R "$(id -u):$(id -g)" ~/.cache/uv || warn "chown ~/.cache/uv 失败, 请检查权限"
 
     # 安装 MoFox_Bot 依赖
     cd "$DEPLOY_DIR/MoFox_Bot" || err "无法进入 MoFox_Bot 目录"
