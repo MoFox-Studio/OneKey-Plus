@@ -311,9 +311,11 @@ class MaiBotManager:
             print(Colors.bold("依赖包管理"))
             print("  1. 更新 / 重装 Bot本体依赖")
             print("  3. 更新 / 重装 所有依赖")
+            print("  4. 从指定依赖文件安装")
+            print("  5. 安装指定依赖包")
             print("  0. 返回主菜单")
 
-            choice = input(Colors.bold("请选择操作 (0-3): ")).strip()
+            choice = input(Colors.bold("请选择操作 (0-5): ")).strip()
 
             if choice == "0":
                 break
@@ -321,6 +323,10 @@ class MaiBotManager:
                 self._install_service_requirements("bot")
             elif choice == "3":
                 self._install_all_requirements()
+            elif choice == "4":
+                self._install_from_file()
+            elif choice == "5":
+                self._install_specific_package()
             else:
                 print(Colors.red("无效选择"))
             input("按回车键继续...")
@@ -367,6 +373,60 @@ class MaiBotManager:
             if (self.services[service_key]["path"] / "requirements.txt").exists():
                 self._install_service_requirements(service_key)
         print(Colors.green("所有依赖安装检查完成"))
+
+
+    def _install_from_file(self):
+        """从指定文件安装依赖"""
+        file_path_str = input(Colors.bold("请输入依赖文件的路径 (例如: C:\\Users\\YourName\\Desktop\\requirements.txt): ")).strip()
+        requirements_file = Path(file_path_str)
+
+        if not requirements_file.exists() or not requirements_file.is_file():
+            print(Colors.red(f"❌ 文件不存在或不是一个有效文件: {requirements_file}"))
+            return
+
+        print(Colors.blue(f"正在从 {requirements_file.name} 安装依赖..."))
+        self._execute_pip_install(["-r", str(requirements_file)])
+
+    def _install_specific_package(self):
+        """安装指定的Python包"""
+        package_names = input(Colors.bold("请输入要安装的包名 (多个包请用空格隔开): ")).strip()
+        if not package_names:
+            print(Colors.yellow("没有输入任何包名。"))
+            return
+
+        packages = package_names.split()
+        print(Colors.blue(f"准备安装包: {', '.join(packages)}"))
+        self._execute_pip_install(packages)
+
+    def _execute_pip_install(self, install_args: List[str]):
+        """执行pip install命令，并尝试多个镜像源"""
+        mirrors = [
+            "https://pypi.tuna.tsinghua.edu.cn/simple",
+            "https://pypi.doubanio.com/simple/",
+            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/",
+        ]
+
+        for mirror_url in mirrors:
+            print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
+            cmd = [
+                str(self.python_executable),
+                "-m",
+                "pip",
+                "install",
+            ] + install_args + [
+                "-i",
+                mirror_url,
+            ]
+            
+            success, _ = self.run_command(cmd)
+            if success:
+                print(Colors.green(f"✅ 依赖安装成功!"))
+                return
+            else:
+                print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
+
+        print(Colors.red(f"❌ 依赖安装失败，所有镜像源均尝试失败。"))
 
     def open_config_file(self):
         config_files = [
