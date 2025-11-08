@@ -44,6 +44,7 @@ class Updater:
             "https://pypi.douban.com/simple/",
             "https://pypi.mirrors.ustc.edu.cn/simple/"
         ]
+        self.update_all()
 
     def _load_config(self):
         config_path = self.base_path / "update_config.json"
@@ -197,6 +198,7 @@ class Updater:
                 print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"))
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
+
     def update_all(self):
         print(Colors.bold(Colors.cyan("=" * 60)))
         print(Colors.bold(Colors.cyan("          开始执行一键更新程序")))

@@ -289,7 +289,7 @@ class MaiBotManager:
             print(f"  {service['name']}: {status}")
 
     def start_sqlite_studio(self):
-        sqlite_studio_path = self.base_path / "SQLiteStudio" / "SQLiteStudio.exe"
+        sqlite_studio_path = self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
         if not sqlite_studio_path.exists():
             print(Colors.red(f"❌ SQLiteStudio未找到: {sqlite_studio_path}"))
             return
