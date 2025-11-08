@@ -83,7 +83,7 @@ def ask_for_config(config, comments, parent_key=''):
                         elif original_type == list:
                             new_value = [item.strip() for item in re.split(r'[\s,]+', new_value_str) if item.strip()]
                         elif original_type == int:
-                            new_value = int(new_value_str)
+                            new_value = tomlkit.integer(int(new_value_str))
                         elif original_type == float:
                             new_value = float(new_value_str)
                         else:
