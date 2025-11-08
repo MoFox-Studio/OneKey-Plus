@@ -1,0 +1,14 @@
+{
+    "bot": {
+        "name": "MoFox_Bot 主程序",
+        "path": "core/Bot",
+        "repo_url": "https://github.com/MoFox-Studio/MoFox_Bot.git",
+        "branch": "master"
+    },
+    "onekey": {
+        "name": "OneKey-Plus 管理程序",
+        "path": "./",
+        "repo_url": "https://github.com/MoFox-Studio/OneKey-Plus.git",
+        "branch": "Windows"
+    }
+}

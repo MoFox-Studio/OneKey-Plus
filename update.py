@@ -5,6 +5,7 @@ import sys
 import io
 import subprocess
 import time
+import json
 from pathlib import Path
 from typing import List, Optional
 
@@ -32,25 +33,30 @@ class Colors:
     def cyan(text): return f"{Colors.CYAN}{text}{Colors.END}"
     @staticmethod
     def bold(text): return f"{Colors.BOLD}{text}{Colors.END}"
-
 class Updater:
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
+    def _load_config(self):
+        config_path = self.base_path / "update_config.json"
+        if not config_path.exists():
+            print(Colors.red(f"错误：配置文件 {config_path} 不存在！"))
+            sys.exit(1)
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            # 将路径字符串转换为Path对象
+            for service, settings in config.items():
+                if "path" in settings:
+                    settings["path"] = self.base_path / settings["path"]
+            return config
+
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
-        self.services = {
-            "bot": {
-                "name": "MoFox_Bot 主程序",
-                "path": self.base_path / "core" / "Bot",
-                "repo_url": "https://github.com/MoFox-Studio/MoFox_Bot.git",
-                "branch": "master"
-            },
-            "onekey": {
-                "name": "OneKey-Plus 管理程序",
-                "path": self.base_path,
-                "repo_url": "https://github.com/MoFox-Studio/OneKey-Plus.git",
-                "branch": "Windows"
-            }
-        }
+        self.services = self._load_config()
+        self.mirrors = [
+            "https://pypi.tuna.tsinghua.edu.cn/simple",
+            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://pypi.douban.com/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/"
+        ]
 
     def _find_git_executable(self) -> Optional[str]:
         import shutil
@@ -171,23 +177,27 @@ class Updater:
         requirements_file = repo_path / "requirements.txt"
         if requirements_file.exists():
             print(Colors.blue(f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."))
-            mirror_url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-            # 添加 -q 参数来减少不必要的输出
-            cmd = [str(self.python_executable), '-m', 'pip', 'install', '-q', '-r', str(requirements_file), '-i', mirror_url, '--upgrade']
             
-            # 默认不显示输出，但在失败时捕获并打印错误
-            success, output = self.run_command(cmd, show_output=True)
+            install_success = False
+            for mirror_url in self.mirrors:
+                print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"))
+                cmd = [str(self.python_executable), '-m', 'pip', 'install', '-q', '-r', str(requirements_file), '-i', mirror_url, '--upgrade']
+                
+                success, output = self.run_command(cmd, show_output=True)
+                
+                if success:
+                    print(Colors.green(f"  -> ✅ 使用该镜像源安装成功"))
+                    install_success = True
+                    break
+                else:
+                    print(Colors.yellow(f"  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."))
             
-            if success:
+            if install_success:
                 print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"))
             else:
-                print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败"))
-                # 如果有错误输出，则打印出来
-                if output:
-                    print(Colors.yellow("错误详情:\n" + output))
+                print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"))
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
-
     def update_all(self):
         print(Colors.bold(Colors.cyan("=" * 60)))
         print(Colors.bold(Colors.cyan("          开始执行一键更新程序")))
@@ -233,3 +243,4 @@ if __name__ == "__main__":
     updater = Updater()
     updater.update_all()
     input(Colors.cyan("按回车键退出..."))
+

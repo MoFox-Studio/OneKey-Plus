@@ -10,6 +10,7 @@ mofox 一键管理程序
 import os
 import sys
 import io
+import json
 import subprocess
 import time
 from pathlib import Path
@@ -68,43 +69,6 @@ class MaiBotManager:
         git_path = bot_path / ".git"
         return bot_path.exists() and git_path.exists()
 
-    def switch_bot_branch(self):
-        """切换MoFox_Bot主程序分支（dev/master），仅初始化后可用"""
-        bot_path = self.base_path / "core" / "Bot"
-        if not self.is_bot_initialized():
-            print(Colors.red("❌ Bot主程序未初始化，无法切换分支！请先完成初始化。"))
-            input("按回车键返回主菜单...")
-            return
-        while True:
-            self.clear_screen()
-            print(Colors.bold("切换MoFox_Bot主程序分支"))
-            print("  1. 切换到 master 分支")
-            print("  2. 切换到 dev 分支")
-            print("  0. 返回主菜单")
-            choice = input(Colors.bold("请选择操作 (0-2): ")).strip()
-            if choice == "0":
-                break
-            elif choice in ("1", "2"):
-                branch = "master" if choice == "1" else "dev"
-                print(Colors.blue(f"正在切换到 {branch} 分支..."))
-                # 拉取最新分支
-                cmds = [
-                    ["git", "fetch", "origin"],
-                    ["git", "checkout", branch],
-                    ["git", "pull", "origin", branch],
-                ]
-                for cmd in cmds:
-                    success, output = self.run_command(cmd, cwd=bot_path, show_output=False)
-                    if not success:
-                        print(Colors.red(f"❌ 命令 {' '.join(cmd)} 执行失败：\n{output}"))
-                        break
-                else:
-                    print(Colors.green(f"✅ 已切换到 {branch} 分支并拉取最新代码。"))
-                input("按回车键返回...")
-                break
-            else:
-                print(Colors.red("无效选择"))
-                input("按回车键继续...")
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
@@ -119,7 +83,7 @@ class MaiBotManager:
             },
             "napcat": {
                 "name": "Napcat 服务",
-                "path": self.base_path / "core" / "Napcat" / "Shell",
+                "path": self.base_path / "core" / "Napcat" ,
                 "main_file": "napcat.bat",
                 "type": "batch",
             },
@@ -159,7 +123,6 @@ class MaiBotManager:
         print()
         print(Colors.magenta("配置管理："))
         print("  9. 打开配置文件")
-        print("  10. 修改权限设置")
         print()
         print("  0. 退出程序")
         print()
@@ -427,11 +390,67 @@ class MaiBotManager:
                 print(Colors.red("无效选择"))
             input("按回车键继续...")
 
-    def modify_permission_settings(self):
-        # This function requires tomlkit, which is not a standard library.
-        # For simplicity, this is left as an exercise for the user to implement if needed.
-        print(Colors.yellow("此功能需要 `tomlkit` 库，请按需实现。"))
-        pass
+    def switch_bot_branch(self):
+        """切换MoFox_Bot主程序分支"""
+        if not self.is_bot_initialized():
+            print(Colors.red("❌ Bot主程序未初始化，无法切换分支！请先完成初始化。"))
+            input("按回车键返回主菜单...")
+            return
+
+        config_path = self.base_path / "update_config.json"
+        if not config_path.exists():
+            print(Colors.red(f"❌ 配置文件 {config_path} 不存在！"))
+            input("按回车键返回主菜单...")
+            return
+
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        except Exception as e:
+            print(Colors.red(f"❌ 读取配置文件失败: {e}"))
+            input("按回车键返回主菜单...")
+            return
+
+        current_branch = config.get("bot", {}).get("branch", "N/A")
+
+        while True:
+            self.clear_screen()
+            print(Colors.bold("切换MoFox_Bot主程序分支"))
+            print(f"当前分支: {Colors.green(current_branch)}")
+            print("\n请选择要切换的目标分支:")
+            print("  1. master (稳定版)")
+            print("  2. dev (开发版)")
+            print("\n  0. 返回主菜单")
+
+            choice = input(Colors.bold("请选择操作 (0-2): ")).strip()
+
+            if choice == "0":
+                break
+            elif choice in ("1", "2"):
+                target_branch = "master" if choice == "1" else "dev"
+                if target_branch == current_branch:
+                    print(Colors.yellow(f"当前已在 {target_branch} 分支，无需切换。"))
+                else:
+                    config["bot"]["branch"] = target_branch
+                    try:
+                        # 写回JSON文件，注意路径的处理
+                        for service, settings in config.items():
+                            if "path" in settings:
+                                # 从绝对路径转换回相对路径以便存储
+                                settings["path"] = str(Path(settings["path"]).relative_to(self.base_path)).replace("\\", "/")
+                        
+                        with open(config_path, 'w', encoding='utf-8') as f:
+                            json.dump(config, f, indent=4, ensure_ascii=False)
+                        
+                        print(Colors.green(f"✅ 分支已设置为 {target_branch}。"))
+                        print(Colors.cyan("下次运行时，请手动执行“启动更新程序.bat”以应用更改。"))
+                        current_branch = target_branch # 更新显示
+                    except Exception as e:
+                        print(Colors.red(f"❌ 写入配置文件失败: {e}"))
+                input("按回车键继续...")
+            else:
+                print(Colors.red("无效选择"))
+                input("按回车键继续...")
 
     def show_system_info(self):
         print(Colors.bold("系统信息："))
@@ -495,7 +514,6 @@ class MaiBotManager:
                     "8": self.show_system_info,
                     "12": self.switch_bot_branch,
                     "9": self.open_config_file,
-                    "10": self.modify_permission_settings,
                     "11": self.start_learning_tool,
                 }
 
