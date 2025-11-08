@@ -36,6 +36,15 @@ class Colors:
 class Updater:
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
+        self.python_executable = self.base_path / "python_embedded" / "python.exe"
+        self.services = self._load_config()
+        self.mirrors = [
+            "https.pypi.tuna.tsinghua.edu.cn/simple",
+            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://pypi.douban.com/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/"
+        ]
+
     def _load_config(self):
         config_path = self.base_path / "update_config.json"
         if not config_path.exists():
@@ -48,16 +57,6 @@ class Updater:
                 if "path" in settings:
                     settings["path"] = self.base_path / settings["path"]
             return config
-
-        self.python_executable = self.base_path / "python_embedded" / "python.exe"
-        self.services = self._load_config()
-        self.mirrors = [
-            "https://pypi.tuna.tsinghua.edu.cn/simple",
-            "http://mirrors.aliyun.com/pypi/simple/",
-            "https://pypi.douban.com/simple/",
-            "https://pypi.mirrors.ustc.edu.cn/simple/"
-        ]
-
     def _find_git_executable(self) -> Optional[str]:
         import shutil
         git_path = shutil.which('git')
@@ -235,12 +234,10 @@ class Updater:
         print(Colors.bold(Colors.green("=" * 60)))
         print(Colors.bold(Colors.green("          所有仓库更新及依赖检查完毕")))
         print(Colors.bold(Colors.green("=" * 60)))
-
 if __name__ == "__main__":
     if os.name == 'nt':
         os.system('color')
     
-    updater = Updater()
-    updater.update_all()
+    Updater()
     input(Colors.cyan("按回车键退出..."))
 
