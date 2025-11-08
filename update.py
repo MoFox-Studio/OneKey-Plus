@@ -40,9 +40,10 @@ class Updater:
         self.services = self._load_config()
         self.mirrors = [
             "https.pypi.tuna.tsinghua.edu.cn/simple",
-            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://mirrors.aliyun.com/pypi/simple/",
             "https://pypi.douban.com/simple/",
             "https://pypi.mirrors.ustc.edu.cn/simple/"
+            "https://pypi.python.org/"
         ]
         self.update_all()
 
