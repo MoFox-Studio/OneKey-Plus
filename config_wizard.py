@@ -17,6 +17,9 @@ ENV_PATH = os.path.join(BASE_DIR, 'core', 'Bot', '.env')
 # --- 注释定义 ---
 # 在这里为 bot_config.toml 的配置项添加更友好的注释
 BOT_CONFIG_COMMENTS = {
+    'permission': {
+        'master_users': "在这里填上你的 QQ 号，你就是这台 Bot 的最高指挥官！"
+    },
     'bot': {
         'qq_account': "Bot 要用哪个 QQ 号登录？填在这里。",
     }
@@ -62,7 +65,20 @@ def ask_for_config(config, comments, parent_key=''):
                     original_type = type(value)
                     try:
                         new_value = None
-                        if original_type == bool:
+                        if key == 'master_users':
+                            # master_users 的格式是 [['qq', '...']]
+                            current_list = value.tolist() if hasattr(value, 'tolist') else list(value)
+                            current_list.append(['qq', new_value_str])
+                            # 去重
+                            unique_list = []
+                            seen = set()
+                            for item in current_list:
+                                t_item = tuple(item)
+                                if t_item not in seen:
+                                    unique_list.append(item)
+                                    seen.add(t_item)
+                            new_value = unique_list
+                        elif original_type == bool:
                             new_value = new_value_str.lower() in ['true', '1', 't', 'y', 'yes']
                         elif original_type == list:
                             new_value = [item.strip() for item in re.split(r'[\s,]+', new_value_str) if item.strip()]
@@ -79,7 +95,6 @@ def ask_for_config(config, comments, parent_key=''):
 
                     except (ValueError, TypeError) as e:
                         print(f"   输入格式错误或转换失败！'{key}' 的值类型应为 {original_type.__name__}。错误：{e}。跳过此项。")
-
 def configure_bot():
     """配置 bot_config.toml 文件。"""
     try:
@@ -87,7 +102,7 @@ def configure_bot():
             config = tomlkit.load(f)
 
         print("\n--- 开始配置 `bot_config.toml` ---")
-        print("将引导您配置几个核心选项，其他高级选项请直接编辑文件。")
+        print("将引导您配置核心选项，其他高级选项请直接编辑文件。")
         ask_for_config(config, BOT_CONFIG_COMMENTS)
 
         # 保存一次，确保QQ号写入
