@@ -110,7 +110,7 @@ def configure_bot():
             tomlkit.dump(config, f)
         
         print("\n核心配置完成！")
-        input("接下来将打开配置文件，您可以检查或修改其他高级设置。按 Enter 键继续...")
+        input("接下来将打开配置文件，您可以检查或修改其他高级设置，如果你不知道怎么配置，请参阅https://docs.mofox-sama.com/docs/guides/bot_config_guide.html。按 Enter 键继续...")
         
         # 打开文本编辑器
         try:

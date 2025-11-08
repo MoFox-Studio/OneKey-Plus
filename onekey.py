@@ -108,6 +108,13 @@ class MaiBotManager:
     def print_menu(self):
         print(Colors.bold("主菜单："))
         print()
+    # 显示路径信息
+        print(f"  内置Python路径: {Colors.CYAN}{self.python_executable}{Colors.END}")
+        print(f"  Bot本体路径: {Colors.CYAN}{self.services['bot']['path']}{Colors.END}")
+        print(f"  Napcat路径: {Colors.CYAN}{self.services['napcat']['path']}{Colors.END}")
+        print(f"  文档网站:https://docs.mofox-sama.com/")
+        print(f"  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html")
+        print()
         print(Colors.green("快捷启动服务管理："))
         print("  1. 启动服务组合 →")
         print("  2. 启动 MoFox_Bot 主程序")
