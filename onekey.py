@@ -112,8 +112,8 @@ class MaiBotManager:
         print(f"  内置Python路径: {Colors.CYAN}{self.python_executable}{Colors.END}")
         print(f"  Bot本体路径: {Colors.CYAN}{self.services['bot']['path']}{Colors.END}")
         print(f"  Napcat路径: {Colors.CYAN}{self.services['napcat']['path']}{Colors.END}")
-        print(f"  文档网站:https://docs.mofox-sama.com/")
-        print(f"  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html")
+        print("  文档网站:https://docs.mofox-sama.com/")
+        print("  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html")
         print()
         print(Colors.green("快捷启动服务管理："))
         print("  1. 启动服务组合 →")
@@ -421,12 +421,12 @@ class MaiBotManager:
             
             success, _ = self.run_command(cmd)
             if success:
-                print(Colors.green(f"✅ 依赖安装成功!"))
+                print(Colors.green("✅ 依赖安装成功!"))
                 return
             else:
                 print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
 
-        print(Colors.red(f"❌ 依赖安装失败，所有镜像源均尝试失败。"))
+        print(Colors.red("❌ 依赖安装失败，所有镜像源均尝试失败。"))
 
     def open_config_file(self):
         config_files = [

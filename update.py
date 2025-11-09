@@ -187,11 +187,11 @@ class Updater:
                 success, output = self.run_command(cmd, show_output=True)
                 
                 if success:
-                    print(Colors.green(f"  -> ✅ 使用该镜像源安装成功"))
+                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"))
                     install_success = True
                     break
                 else:
-                    print(Colors.yellow(f"  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."))
+                    print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."))
             
             if install_success:
                 print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"))
