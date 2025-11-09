@@ -226,6 +226,7 @@ class MaiBotManager:
 
         try:
             service_type = service.get("type", "python")
+            service_name = service.get("name", "VScode")
 
             if service_type == "python":
                 powershell_cmd = [
@@ -250,11 +251,22 @@ class MaiBotManager:
                 ]
                 process = subprocess.Popen(cmd_command, cwd=service_path)
             elif service_type == "exe":
-                process = subprocess.Popen(
-                    [str(service_path / main_file)],
-                    cwd=service_path,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                )
+                command = [str(service_path / main_file)]
+                if service_name == "VSCode":
+                    command.append("./core/bot")
+                
+                try:
+                    process = subprocess.Popen(
+                        command,
+                        cwd=service_path,
+                        creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    )
+                except FileNotFoundError:
+                    print(f"错误：路径 '{service_path}' 或可执行文件 '{main_file}' 未找到。")
+                except OSError as e:
+                    print(f"错误：启动服务 '{service_name}' 时发生操作系统错误：{e}")
+                except Exception as e:
+                    print(f"错误：启动服务 '{service_name}' 时发生未知错误：{e}")
             else:
                 print(Colors.red(f"不支持的服务类型: {service_type}"))
                 return False
