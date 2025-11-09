@@ -59,6 +59,7 @@ class Updater:
                 if "path" in settings:
                     settings["path"] = self.base_path / settings["path"]
             return config
+
     def _find_git_executable(self) -> Optional[str]:
         """直接返回内置的Git可执行文件路径"""
         git_exe_path = self.base_path / "PortableGit" / "bin" / "git.exe"

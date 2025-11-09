@@ -112,6 +112,7 @@ class MaiBotManager:
         print(f"  内置Python路径: {Colors.CYAN}{self.python_executable}{Colors.END}")
         print(f"  Bot本体路径: {Colors.CYAN}{self.services['bot']['path']}{Colors.END}")
         print(f"  Napcat路径: {Colors.CYAN}{self.services['napcat']['path']}{Colors.END}")
+        print(f"  GIT路径:{Colors.CYAN}{self.base_path / "PortableGit" / "bin" / "git.exe"}{Colors.END}")
         print("  文档网站:https://docs.mofox-sama.com/")
         print("  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html")
         print()
@@ -290,21 +291,26 @@ class MaiBotManager:
 
     def start_sqlite_studio(self):
         sqlite_studio_path = self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
+        db_path = self.base_path / "core" / "Bot" / "data" / "MaiBot.db"
+
         if not sqlite_studio_path.exists():
             print(Colors.red(f"❌ SQLiteStudio未找到: {sqlite_studio_path}"))
             return
+        
+        if not db_path.exists():
+            print(Colors.red(f"❌ 数据库文件MaiBot.db未找到: {db_path},你可能需要启动一次主程序来生成"))
+            return
 
         try:
-            print(Colors.blue("正在启动SQLiteStudio..."))
+            print(Colors.blue("正在启动SQLiteStudio并加载数据库..."))
             subprocess.Popen(
-                [str(sqlite_studio_path)],
+                [str(sqlite_studio_path), str(db_path)],
                 cwd=str(sqlite_studio_path.parent),
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             )
             print(Colors.green("✅ SQLiteStudio已启动"))
         except Exception as e:
             print(Colors.red(f"❌ 启动SQLiteStudio失败: {e}"))
-
     def install_requirements(self):
         while True:
             self.clear_screen()
