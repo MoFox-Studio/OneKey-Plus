@@ -3,6 +3,7 @@ import tomlkit
 import os
 import re
 import json
+import subprocess
 from collections.abc import MutableMapping
 
 # --- 路径定义 ---
@@ -129,21 +130,41 @@ def configure_bot():
             tomlkit.dump(config, f)
 
         print("\n核心配置完成！")
-        input(
-            "接下来将打开配置文件，您可以检查或修改其他高级设置，如果你不知道怎么配置，请参阅https://docs.mofox-sama.com/docs/guides/bot_config_guide.html。按 Enter 键继续..."
+        print(
+            "接下来将为您打开配置文件，您可以检查或修改其他高级设置。"
         )
+        print("如果你不知道怎么配置，请参阅 https://docs.mofox-sama.com/docs/guides/bot_config_guide.html")
 
-        # 打开文本编辑器
+        # --- 打开编辑器 ---
+        vscode_path = os.path.join(BASE_DIR, "core", "vscode", "Code.exe")
+        
+        # 科普时间！
+        print("\n--- ✨ VS Code 配置文件编辑小贴士 ✨ ---")
+        print("正在为您启动 VS Code 来编辑 TOML 配置文件。")
+        print("💡 专业提示：VS Code 能够实时检查语法！")
+        print("   - 如果您看到代码下面有红色的波浪线 (就像这样: ~~~)，说明您的配置文件可能写错了。")
+        print("   - 把鼠标悬停在红色波浪线上，通常会显示详细的错误信息。")
+        print("   - 如果看不懂错误信息，可以尝试复制下来，使用翻译软件或者直接找 AI 助手帮忙分析和修正！")
+        print("------------------------------------------\n")
+        input("按 Enter 键继续...")
+
+
         try:
-            os.startfile(BOT_CONFIG_PATH)
-            print("配置文件已在默认文本编辑器中打开，请在修改完成后关闭它。")
+            if os.path.exists(vscode_path):
+                # 使用 subprocess.Popen 启动 VS Code
+                subprocess.Popen([vscode_path, BOT_CONFIG_PATH])
+                print(f"已使用 VS Code 打开配置文件: {BOT_CONFIG_PATH}")
+                print("请在 VS Code 中完成修改后，手动返回此窗口继续后续步骤。")
+            else:
+                print("未在本目录找到 VS Code，将尝试使用系统默认编辑器打开。")
+                os.startfile(BOT_CONFIG_PATH)
+                print("配置文件已在默认文本编辑器中打开，请在修改完成后关闭它。")
         except Exception as e:
             print(f"无法自动打开配置文件: {e}")
             print("请手动打开以下文件进行修改：")
             print(BOT_CONFIG_PATH)
 
-        input("完成修改后，请按 Enter 键继续后续步骤...")
-
+        input("完成修改后，请按 Enter 键返回此窗口并继续后续步骤...")
     except FileNotFoundError:
         print(f"错误：找不到 `bot_config.toml` 文件，路径：{BOT_CONFIG_PATH}")
     except Exception as e:
@@ -152,7 +173,6 @@ def configure_bot():
 
 def check_eula():
     """检查并处理EULA协议确认。"""
-    eula_confirmed = False
     env_content = {}
     if os.path.exists(ENV_PATH):
         with open(ENV_PATH, "r", encoding="utf-8") as f:
@@ -214,7 +234,7 @@ def configure_model():
                     print(f"   当前值: {provider.get('api_key')}")
 
                     api_key = input(
-                        "   请输入你的 SiliconFlow API Key(如果没有可以在https://cloud.siliconflow.cn/expensebill这里注册) (直接回车则不修改): "
+                        "   请输入你的 SiliconFlow API Key(如果没有可以在https://cloud.siliconflow.cn/这里注册) (直接回车则不修改): "
                     ).strip()
                     if api_key:
                         provider["api_key"] = api_key
