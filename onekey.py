@@ -138,6 +138,9 @@ class MaiBotManager:
         print()
         print(Colors.magenta(" BOT管理："))
         print("  11. 打开配置文件")
+        print("  12. 打开数据文件夹")
+        print("  13. 打开插件文件夹")
+        print(f"  14. {Colors.RED}删除数据库 (请谨慎操作!){Colors.END}")
 
     def print_service_groups_menu(self):
         print(Colors.bold("选择启动组："))
@@ -467,6 +470,46 @@ class MaiBotManager:
                 print(Colors.red("无效选择"))
             input("按回车键继续...")
 
+
+    def open_data_folder(self):
+        """打开数据文件夹"""
+        data_path = self.base_path / "core" / "Bot" / "data"
+        if data_path.exists():
+            os.startfile(data_path)
+            print(Colors.green(f"✅ 已尝试打开数据文件夹: {data_path}"))
+        else:
+            print(Colors.red(f"❌ 数据文件夹不存在: {data_path}"))
+
+    def open_plugin_folder(self):
+        """打开插件文件夹"""
+        plugin_path = self.base_path / "core" / "Bot" / "plugin"
+        if plugin_path.exists():
+            os.startfile(plugin_path)
+            print(Colors.green(f"✅ 已尝试打开插件文件夹: {plugin_path}"))
+        else:
+            print(Colors.red(f"❌ 插件文件夹不存在: {plugin_path}"))
+
+    def delete_database(self):
+        """删除数据库文件"""
+        db_path = self.base_path / "core" / "Bot" / "data" / "MaiBot.db"
+        if not db_path.exists():
+            print(Colors.yellow(f"数据库文件不存在，无需删除: {db_path}"))
+            return
+
+        print(Colors.red(Colors.bold("警告：这是一个危险操作！")))
+        confirm = input(
+            Colors.yellow(f"你确定要删除数据库文件 '{db_path.name}' 吗？此操作无法撤销！(y/n): ")
+        ).strip().lower()
+
+        if confirm == 'y':
+            try:
+                os.remove(db_path)
+                print(Colors.green("✅ 数据库文件已成功删除。"))
+            except Exception as e:
+                print(Colors.red(f"❌ 删除数据库文件失败: {e}"))
+        else:
+            print(Colors.cyan("操作已取消。"))
+
     def switch_bot_branch(self):
         """切换MoFox_Bot主程序分支"""
         if not self.is_bot_initialized():
@@ -593,6 +636,9 @@ class MaiBotManager:
                     "9": self.switch_bot_branch,
                     "10": self.start_learning_tool,
                     "11": self.open_config_file,
+                    "12": self.open_data_folder,
+                    "13": self.open_plugin_folder,
+                    "14": self.delete_database,
                 }
 
                 if choice == "0":
