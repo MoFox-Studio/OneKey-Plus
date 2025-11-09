@@ -60,21 +60,18 @@ class Updater:
                     settings["path"] = self.base_path / settings["path"]
             return config
     def _find_git_executable(self) -> Optional[str]:
+        """直接返回内置的Git可执行文件路径"""
+        git_exe_path = self.base_path / "PortableGit" / "bin" / "git.exe"
+        if git_exe_path.exists():
+            return str(git_exe_path)
+        
+        # 作为备用方案，尝试在PATH中查找
         import shutil
         git_path = shutil.which('git')
         if git_path:
             return git_path
-        common_paths = [
-            r"C:\Program Files\Git\bin\git.exe",
-            r"C:\Program Files (x86)\Git\bin\git.exe",
-            r"C:\Users\{}\AppData\Local\Programs\Git\bin\git.exe".format(os.environ.get('USERNAME', '')),
-            r"C:\Git\bin\git.exe",
-        ]
-        for path in common_paths:
-            if os.path.exists(path):
-                return path
+            
         return None
-
     def run_command(self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True) -> tuple:
         try:
             # 当show_output为True时，我们不捕获输出，让其直接流向控制台
