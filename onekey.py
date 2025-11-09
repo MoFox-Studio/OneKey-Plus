@@ -87,6 +87,12 @@ class MaiBotManager:
                 "main_file": "napcat.bat",
                 "type": "batch",
             },
+            "vscode": {
+                "name": "VSCode",
+                "path": self.base_path / "core" / "vscode",
+                "main_file": "code.exe",
+                "type": "exe",
+            },
         }
 
     def clear_screen(self):
@@ -120,20 +126,18 @@ class MaiBotManager:
         print("  1. 启动服务组合 →")
         print("  2. 启动 MoFox_Bot 主程序")
         print("  3. 启动 Napcat 服务")
+        print("  4. 启动 vscode")
         print("  5. 查看运行状态")
         print("  6. 启动数据库管理程序")
         print()
         print(Colors.yellow("其他功能："))
         print("  7. 安装/更新依赖包")
         print("  8. 查看系统信息")
-        print("  12. 切换Bot主程序分支")
-        print("  11. 启动知识库学习工具")
+        print("  9. 切换Bot主程序分支")
+        print("  10. 启动知识库学习工具")
         print()
-        print(Colors.magenta("配置管理："))
-        print("  9. 打开配置文件")
-        print()
-        print("  0. 退出程序")
-        print()
+        print(Colors.magenta(" BOT管理："))
+        print("  11. 打开配置文件")
 
     def print_service_groups_menu(self):
         print(Colors.bold("选择启动组："))
@@ -575,19 +579,20 @@ class MaiBotManager:
             self.print_menu()
 
             try:
-                choice = input(Colors.bold("请选择操作 (0-12): ")).strip()
+                choice = input(Colors.bold("请选择操作 (0-11): ")).strip()
 
                 actions = {
                     "1": self.start_service_group,
                     "2": lambda: self.start_service("bot"),
                     "3": lambda: self.start_service("napcat"),
+                    "4": lambda: self.start_service("vscode"),
                     "5": self.show_status,
                     "6": self.start_sqlite_studio,
                     "7": self.install_requirements,
                     "8": self.show_system_info,
-                    "12": self.switch_bot_branch,
-                    "9": self.open_config_file,
-                    "11": self.start_learning_tool,
+                    "9": self.switch_bot_branch,
+                    "10": self.start_learning_tool,
+                    "11": self.open_config_file,
                 }
 
                 if choice == "0":
