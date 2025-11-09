@@ -39,11 +39,11 @@ class Updater:
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
         self.services = self._load_config()
         self.mirrors = [
-            "https://pypi.python.org/"
-            "https://mirrors.huaweicloud.com/repository/pypi/simple/"
+            "https://pypi.python.org/",
+            "https://mirrors.huaweicloud.com/repository/pypi/simple/",
             "https://mirrors.aliyun.com/pypi/simple/",
             "https://pypi.douban.com/simple/",
-            "https://pypi.mirrors.ustc.edu.cn/simple/"
+            "https://pypi.mirrors.ustc.edu.cn/simple/",
         ]
         self.update_all()
 
@@ -91,8 +91,7 @@ class Updater:
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
             return False, str(e)
-
-    def run_command_with_env(self, cmd: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None, show_output: bool = True) -> tuple:
+    def run_command_with_env(self, cmd: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None) -> tuple:
         try:
             if cmd and cmd[0] == 'git':
                 git_path = self._find_git_executable()
@@ -100,40 +99,33 @@ class Updater:
                     cmd = [git_path] + cmd[1:]
                 else:
                     print(Colors.red("错误：系统中未找到Git"))
-                    return False, "Git not found"
+                    return False, {'stdout': '', 'stderr': 'Git not found', 'returncode': -1}
 
-            # 当show_output为True时，不捕获输出，让其直接流向控制台
-            # 当show_output为False时，捕获输出
-            capture = not show_output
             result = subprocess.run(
                 cmd,
                 cwd=str(cwd) if cwd else None,
                 env=env,
-                capture_output=capture,
+                capture_output=True,
                 text=True,
                 encoding='utf-8',
                 errors='ignore'
             )
-
-            if capture:
-                output_info = {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
-                return result.returncode == 0, output_info
-            
-            return result.returncode == 0, ""
+            sys.stdout.flush()
+            output_info = {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
+            return result.returncode == 0, output_info
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
-            return False, str(e)
+            return False, {'stdout': '', 'stderr': str(e), 'returncode': -1}
 
     def _update_repo(self, service: dict, repo_path: Path) -> bool:
         try:
             repo_url = service["repo_url"]
             env = os.environ.copy()
             env['GIT_TERMINAL_PROMPT'] = '0'
-            
             self.run_command_with_env(['git', 'remote', 'set-url', 'origin', repo_url], cwd=repo_path, env=env)
             
             # 检查本地是否有修改
-            status_success, status_output = self.run_command_with_env(['git', 'status', '--porcelain'], cwd=repo_path, env=env, show_output=False)
+            status_success, status_output = self.run_command_with_env(['git', 'status', '--porcelain'], cwd=repo_path, env=env)
             if status_success and status_output['stdout']:
                 print(Colors.yellow("检测到本地仓库有未提交的修改。"))
                 sys.stdout.flush()
@@ -143,10 +135,10 @@ class Updater:
                     sys.stdout.flush()
                     reset_success, _ = self.run_command_with_env(['git', 'reset', '--hard', 'HEAD'], cwd=repo_path, env=env)
                     if not reset_success:
-                        print(Colors.red("重置本地仓库失败，跳过更新。"))
+                        print(Colors.red("重置本地仓库失败，跳过更新。"),flush=True)
                         return False
                 else:
-                    print(Colors.cyan("已取消更新操作。"))
+                    print(Colors.cyan("已取消更新操作。"),flush=True)
                     return False
 
             branch = service.get("branch", "master")
@@ -158,15 +150,21 @@ class Updater:
                 print(Colors.cyan(f"本地不存在分支 {branch}，尝试创建并切换..."))
                 sys.stdout.flush()
                 self.run_command_with_env(['git', 'checkout', '-b', branch, f'origin/{branch}'], cwd=repo_path, env=env)
-
-            print(Colors.cyan("正在从 origin 拉取最新内容..."))
-            sys.stdout.flush()
-            pull_success, _ = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env)
             
+            print(Colors.cyan("正在从 origin 拉取最新内容..."))
+            pull_success, pull_output = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env)
+        
             if pull_success:
-                return True
+                if pull_output and "Already up to date." in pull_output.get('stdout', ''):
+                    print(Colors.green("仓库已经是最新版本。"))
+                    sys.stdout.flush()
+                    return True
+                else:
+                    return True
             else:
                 print(Colors.red("仓库更新失败。"))
+                if pull_output and pull_output.get('stderr'):
+                    print(Colors.red(f"  -> 错误信息: {pull_output['stderr'].strip()}"))
                 return False
         except Exception as e:
             print(Colors.red(f"仓库更新出错: {e}"))
@@ -175,11 +173,11 @@ class Updater:
     def _install_requirements(self, service: dict, repo_path: Path):
         requirements_file = repo_path / "requirements.txt"
         if requirements_file.exists():
-            print(Colors.blue(f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."))
+            print(Colors.blue(f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."),flush=True)
             
             install_success = False
             for mirror_url in self.mirrors:
-                print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"))
+                print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"),flush=True)
                 # 增加--disable-pip-version-check来减少无关输出，--no-cache-dir避免缓存问题
                 cmd = [
                     str(self.python_executable), '-m', 'pip', 'install',
@@ -190,21 +188,22 @@ class Updater:
                 
                 # 直接调用subprocess.run并检查返回码
                 result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+                sys.stdout.flush()
                 
                 if result.returncode == 0:
-                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"))
+                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"),flush=True)
                     install_success = True
                     break
                 else:
-                    print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."))
+                    print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."),flush=True)
                     # 打印一些错误信息帮助诊断
                     if result.stderr:
-                        print(Colors.red(f"  -> 错误信息: {result.stderr.strip()}"))
+                        print(Colors.red(f"  -> 错误信息: {result.stderr.strip()}"),flush=True)
 
             if install_success:
-                print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"))
+                print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"),flush=True)
             else:
-                print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"))
+                print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"),flush=True)
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
     def update_all(self):
@@ -233,10 +232,10 @@ class Updater:
             update_success = self._update_repo(service, repo_path)
             
             if update_success:
-                print(Colors.green(f"✅ {service['name']} 更新成功"))
+                print(Colors.green(f"✅ {service['name']} 更新成功"),flush=True)
                 self._install_requirements(service, repo_path)
             else:
-                print(Colors.red(f"❌ {service['name']} 更新失败"))
+                print(Colors.red(f"❌ {service['name']} 更新失败"),flush=True)
             
             print()
             time.sleep(1)
