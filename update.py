@@ -39,11 +39,11 @@ class Updater:
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
         self.services = self._load_config()
         self.mirrors = [
+            "https://pypi.python.org/"
             "https://mirrors.huaweicloud.com/repository/pypi/simple/"
             "https://mirrors.aliyun.com/pypi/simple/",
             "https://pypi.douban.com/simple/",
             "https://pypi.mirrors.ustc.edu.cn/simple/"
-            "https://pypi.python.org/"
         ]
         self.update_all()
 
@@ -180,24 +180,33 @@ class Updater:
             install_success = False
             for mirror_url in self.mirrors:
                 print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"))
-                cmd = [str(self.python_executable), '-m', 'pip', 'install', '-q', '-r', str(requirements_file), '-i', mirror_url, '--upgrade']
+                # 增加--disable-pip-version-check来减少无关输出，--no-cache-dir避免缓存问题
+                cmd = [
+                    str(self.python_executable), '-m', 'pip', 'install',
+                    '-r', str(requirements_file),
+                    '-i', mirror_url,
+                    '--upgrade', '--disable-pip-version-check', '--no-cache-dir'
+                ]
                 
-                success, output = self.run_command(cmd, show_output=True)
+                # 直接调用subprocess.run并检查返回码
+                result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore')
                 
-                if success:
+                if result.returncode == 0:
                     print(Colors.green("  -> ✅ 使用该镜像源安装成功"))
                     install_success = True
                     break
                 else:
                     print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."))
-            
+                    # 打印一些错误信息帮助诊断
+                    if result.stderr:
+                        print(Colors.red(f"  -> 错误信息: {result.stderr.strip()}"))
+
             if install_success:
                 print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"))
             else:
                 print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"))
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
-
     def update_all(self):
         print(Colors.bold(Colors.cyan("=" * 60)))
         print(Colors.bold(Colors.cyan("          开始执行一键更新程序")))
