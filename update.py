@@ -9,30 +9,45 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
 
 class Colors:
     """控制台颜色"""
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
 
     @staticmethod
-    def red(text): return f"{Colors.RED}{text}{Colors.END}"
+    def red(text):
+        return f"{Colors.RED}{text}{Colors.END}"
+
     @staticmethod
-    def green(text): return f"{Colors.GREEN}{text}{Colors.END}"
+    def green(text):
+        return f"{Colors.GREEN}{text}{Colors.END}"
+
     @staticmethod
-    def yellow(text): return f"{Colors.YELLOW}{text}{Colors.END}"
+    def yellow(text):
+        return f"{Colors.YELLOW}{text}{Colors.END}"
+
     @staticmethod
-    def blue(text): return f"{Colors.BLUE}{text}{Colors.END}"
+    def blue(text):
+        return f"{Colors.BLUE}{text}{Colors.END}"
+
     @staticmethod
-    def cyan(text): return f"{Colors.CYAN}{text}{Colors.END}"
+    def cyan(text):
+        return f"{Colors.CYAN}{text}{Colors.END}"
+
     @staticmethod
-    def bold(text): return f"{Colors.BOLD}{text}{Colors.END}"
+    def bold(text):
+        return f"{Colors.BOLD}{text}{Colors.END}"
+
+
 class Updater:
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
@@ -52,7 +67,7 @@ class Updater:
         if not config_path.exists():
             print(Colors.red(f"错误：配置文件 {config_path} 不存在！"))
             sys.exit(1)
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
             # 将路径字符串转换为Path对象
             for service, settings in config.items():
@@ -65,15 +80,19 @@ class Updater:
         git_exe_path = self.base_path / "PortableGit" / "bin" / "git.exe"
         if git_exe_path.exists():
             return str(git_exe_path)
-        
+
         # 作为备用方案，尝试在PATH中查找
         import shutil
-        git_path = shutil.which('git')
+
+        git_path = shutil.which("git")
         if git_path:
             return git_path
-            
+
         return None
-    def run_command(self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True) -> tuple:
+
+    def run_command(
+        self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True
+    ) -> tuple:
         try:
             # 当show_output为True时，我们不捕获输出，让其直接流向控制台
             # 当show_output为False时，我们捕获输出以供后续处理
@@ -83,23 +102,30 @@ class Updater:
                 cwd=cwd,
                 capture_output=capture,
                 text=True,
-                encoding='utf-8',
-                errors='ignore'
+                encoding="utf-8",
+                errors="ignore",
             )
             output = result.stdout if capture else ""
             return result.returncode == 0, output
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
             return False, str(e)
-    def run_command_with_env(self, cmd: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None) -> tuple:
+
+    def run_command_with_env(
+        self, cmd: List[str], cwd: Optional[Path] = None, env: Optional[dict] = None
+    ) -> tuple:
         try:
-            if cmd and cmd[0] == 'git':
+            if cmd and cmd[0] == "git":
                 git_path = self._find_git_executable()
                 if git_path:
                     cmd = [git_path] + cmd[1:]
                 else:
                     print(Colors.red("错误：系统中未找到Git"))
-                    return False, {'stdout': '', 'stderr': 'Git not found', 'returncode': -1}
+                    return False, {
+                        "stdout": "",
+                        "stderr": "Git not found",
+                        "returncode": -1,
+                    }
 
             result = subprocess.run(
                 cmd,
@@ -107,55 +133,79 @@ class Updater:
                 env=env,
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='ignore'
+                encoding="utf-8",
+                errors="ignore",
             )
             sys.stdout.flush()
-            output_info = {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}
+            output_info = {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "returncode": result.returncode,
+            }
             return result.returncode == 0, output_info
         except Exception as e:
             print(Colors.red(f"命令执行失败: {e}"))
-            return False, {'stdout': '', 'stderr': str(e), 'returncode': -1}
+            return False, {"stdout": "", "stderr": str(e), "returncode": -1}
 
     def _update_repo(self, service: dict, repo_path: Path) -> bool:
         try:
             repo_url = service["repo_url"]
             env = os.environ.copy()
-            env['GIT_TERMINAL_PROMPT'] = '0'
-            self.run_command_with_env(['git', 'remote', 'set-url', 'origin', repo_url], cwd=repo_path, env=env)
-            
+            env["GIT_TERMINAL_PROMPT"] = "0"
+            self.run_command_with_env(
+                ["git", "remote", "set-url", "origin", repo_url], cwd=repo_path, env=env
+            )
+
             # 检查本地是否有修改
-            status_success, status_output = self.run_command_with_env(['git', 'status', '--porcelain'], cwd=repo_path, env=env)
-            if status_success and status_output['stdout']:
+            status_success, status_output = self.run_command_with_env(
+                ["git", "status", "--porcelain"], cwd=repo_path, env=env
+            )
+            if status_success and status_output["stdout"]:
                 print(Colors.yellow("检测到本地仓库有未提交的修改。"))
                 sys.stdout.flush()
-                choice = input(Colors.yellow("是否要重置本地仓库并强制更新？(Y/N): ")).strip().lower()
-                if choice == 'y':
+                choice = (
+                    input(Colors.yellow("是否要重置本地仓库并强制更新？(Y/N): "))
+                    .strip()
+                    .lower()
+                )
+                if choice == "y":
                     print(Colors.cyan("正在重置本地仓库..."))
                     sys.stdout.flush()
-                    reset_success, _ = self.run_command_with_env(['git', 'reset', '--hard', 'HEAD'], cwd=repo_path, env=env)
+                    reset_success, _ = self.run_command_with_env(
+                        ["git", "reset", "--hard", "HEAD"], cwd=repo_path, env=env
+                    )
                     if not reset_success:
-                        print(Colors.red("重置本地仓库失败，跳过更新。"),flush=True)
+                        print(Colors.red("重置本地仓库失败，跳过更新。"), flush=True)
                         return False
                 else:
-                    print(Colors.cyan("已取消更新操作。"),flush=True)
+                    print(Colors.cyan("已取消更新操作。"), flush=True)
                     return False
 
             branch = service.get("branch", "master")
-            
+
             print(Colors.cyan(f"正在切换到分支: {branch}"))
             sys.stdout.flush()
-            checkout_success, _ = self.run_command_with_env(['git', 'checkout', branch], cwd=repo_path, env=env)
+            checkout_success, _ = self.run_command_with_env(
+                ["git", "checkout", branch], cwd=repo_path, env=env
+            )
             if not checkout_success:
                 print(Colors.cyan(f"本地不存在分支 {branch}，尝试创建并切换..."))
                 sys.stdout.flush()
-                self.run_command_with_env(['git', 'checkout', '-b', branch, f'origin/{branch}'], cwd=repo_path, env=env)
-            
+                self.run_command_with_env(
+                    ["git", "checkout", "-b", branch, f"origin/{branch}"],
+                    cwd=repo_path,
+                    env=env,
+                )
+
             print(Colors.cyan("正在从 origin 拉取最新内容..."))
-            pull_success, pull_output = self.run_command_with_env(['git', 'pull', 'origin', branch], cwd=repo_path, env=env)
-        
+            pull_success, pull_output = self.run_command_with_env(
+                ["git", "pull", "origin", branch], cwd=repo_path, env=env
+            )
+
             if pull_success:
-                if pull_output and "Already up to date." in pull_output.get('stdout', ''):
+                if pull_output and "Already up to date." in pull_output.get(
+                    "stdout", ""
+                ):
                     print(Colors.green("仓库已经是最新版本。"))
                     sys.stdout.flush()
                     return True
@@ -163,7 +213,7 @@ class Updater:
                     return True
             else:
                 print(Colors.red("仓库更新失败。"))
-                if pull_output and pull_output.get('stderr'):
+                if pull_output and pull_output.get("stderr"):
                     print(Colors.red(f"  -> 错误信息: {pull_output['stderr'].strip()}"))
                 return False
         except Exception as e:
@@ -173,39 +223,71 @@ class Updater:
     def _install_requirements(self, service: dict, repo_path: Path):
         requirements_file = repo_path / "requirements.txt"
         if requirements_file.exists():
-            print(Colors.blue(f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."),flush=True)
-            
+            print(
+                Colors.blue(
+                    f"  -> 发现依赖文件，正在安装/更新 {service['name']} 的依赖..."
+                ),
+                flush=True,
+            )
+
             install_success = False
             for mirror_url in self.mirrors:
-                print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"),flush=True)
+                print(Colors.cyan(f"  -> 正在尝试使用镜像源: {mirror_url}"), flush=True)
                 # 增加--disable-pip-version-check来减少无关输出，--no-cache-dir避免缓存问题
                 cmd = [
-                    str(self.python_executable), '-m', 'pip', 'install',
-                    '-r', str(requirements_file),
-                    '-i', mirror_url,
-                    '--upgrade', '--disable-pip-version-check', '--no-cache-dir'
+                    str(self.python_executable),
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    str(requirements_file),
+                    "-i",
+                    mirror_url,
+                    "--upgrade",
+                    "--disable-pip-version-check",
+                    "--no-cache-dir",
                 ]
-                
+
                 # 直接调用subprocess.run并检查返回码
-                result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="ignore",
+                )
                 sys.stdout.flush()
-                
+
                 if result.returncode == 0:
-                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"),flush=True)
+                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"), flush=True)
                     install_success = True
                     break
                 else:
-                    print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."),flush=True)
+                    print(
+                        Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."),
+                        flush=True,
+                    )
                     # 打印一些错误信息帮助诊断
                     if result.stderr:
-                        print(Colors.red(f"  -> 错误信息: {result.stderr.strip()}"),flush=True)
+                        print(
+                            Colors.red(f"  -> 错误信息: {result.stderr.strip()}"),
+                            flush=True,
+                        )
 
             if install_success:
-                print(Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"),flush=True)
+                print(
+                    Colors.green(f"  -> ✅ {service['name']} 依赖安装成功"), flush=True
+                )
             else:
-                print(Colors.red(f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"),flush=True)
+                print(
+                    Colors.red(
+                        f"  -> ❌ {service['name']} 依赖安装失败，已尝试所有镜像源。"
+                    ),
+                    flush=True,
+                )
         else:
             print(Colors.cyan(f"  -> {service['name']} 无需安装依赖。"))
+
     def update_all(self):
         print(Colors.bold(Colors.cyan("=" * 60)))
         print(Colors.bold(Colors.cyan("          开始执行一键更新程序")))
@@ -216,37 +298,38 @@ class Updater:
             print(Colors.red("❌ Git未安装或不在系统PATH中。请先安装Git。"))
             return
 
-        services_to_update = ['bot', 'onekey']
-        
+        services_to_update = ["bot", "onekey"]
+
         for service_key in services_to_update:
             service = self.services[service_key]
             repo_path = service["path"]
-            
+
             print(Colors.yellow(f"--- 正在更新 {service['name']} ---"))
-            
+
             if not (repo_path / ".git").exists():
                 print(Colors.red(f"目录 {repo_path} 不是一个有效的Git仓库，跳过。"))
                 print()
                 continue
 
             update_success = self._update_repo(service, repo_path)
-            
+
             if update_success:
-                print(Colors.green(f"✅ {service['name']} 更新成功"),flush=True)
+                print(Colors.green(f"✅ {service['name']} 更新成功"), flush=True)
                 self._install_requirements(service, repo_path)
             else:
-                print(Colors.red(f"❌ {service['name']} 更新失败"),flush=True)
-            
+                print(Colors.red(f"❌ {service['name']} 更新失败"), flush=True)
+
             print()
             time.sleep(1)
 
         print(Colors.bold(Colors.green("=" * 60)))
         print(Colors.bold(Colors.green("          所有仓库更新及依赖检查完毕")))
         print(Colors.bold(Colors.green("=" * 60)))
+
+
 if __name__ == "__main__":
-    if os.name == 'nt':
-        os.system('color')
-    
+    if os.name == "nt":
+        os.system("color")
+
     Updater()
     input(Colors.cyan("按回车键退出..."))
-
