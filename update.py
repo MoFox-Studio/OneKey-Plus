@@ -39,11 +39,11 @@ class Updater:
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
         self.services = self._load_config()
         self.mirrors = [
-            "https://pypi.python.org/simple/",
             "https://mirrors.huaweicloud.com/repository/pypi/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/",
+            "https://pypi.python.org/simple/",
             "https://mirrors.aliyun.com/pypi/simple/",
             "https://pypi.douban.com/simple/",
-            "https://pypi.mirrors.ustc.edu.cn/simple/",
         ]
         self.update_all()
 
