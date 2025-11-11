@@ -248,31 +248,25 @@ class Updater:
                     "--no-cache-dir",
                 ]
 
-                # 直接调用subprocess.run并检查返回码
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    errors="ignore",
-                )
-                sys.stdout.flush()
+            # 使用Popen实时输出
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='ignore')
+                
+                # 实时读取输出
+                while True:
+                    output = process.stdout.readline() # type: ignore
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        print(f"  {output.strip()}") # 直接打印pip的输出
+                        sys.stdout.flush()
 
-                if result.returncode == 0:
-                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"), flush=True)
+                returncode = process.poll()
+                if returncode == 0:
+                    print(Colors.green("  -> ✅ 使用该镜像源安装成功"),flush=True)
                     install_success = True
                     break
                 else:
-                    print(
-                        Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."),
-                        flush=True,
-                    )
-                    # 打印一些错误信息帮助诊断
-                    if result.stderr:
-                        print(
-                            Colors.red(f"  -> 错误信息: {result.stderr.strip()}"),
-                            flush=True,
-                        )
+                    print(Colors.yellow("  -> ⚠️ 使用该镜像源安装失败，正在尝试下一个..."),flush=True)
 
             if install_success:
                 print(
