@@ -77,13 +77,13 @@ class MaiBotManager:
         self.services = {
             "bot": {
                 "name": "MoFox_Bot 主程序",
-                "path": self.base_path/ "core" / "Bot",
+                "path": self.base_path / "core" / "Bot",
                 "main_file": "__main__.py",
                 "type": "python",
             },
             "napcat": {
                 "name": "Napcat 服务",
-                "path": self.base_path / "core" / "Napcat" ,
+                "path": self.base_path / "core" / "Napcat",
                 "main_file": "napcat.bat",
                 "type": "batch",
             },
@@ -114,13 +114,19 @@ class MaiBotManager:
     def print_menu(self):
         print(Colors.bold("主菜单："))
         print()
-    # 显示路径信息
+        # 显示路径信息
         print(f"  内置Python路径: {Colors.CYAN}{self.python_executable}{Colors.END}")
         print(f"  Bot本体路径: {Colors.CYAN}{self.services['bot']['path']}{Colors.END}")
-        print(f"  Napcat路径: {Colors.CYAN}{self.services['napcat']['path']}{Colors.END}")
-        print(f"  GIT路径:{Colors.CYAN}{self.base_path / "PortableGit" / "bin" / "git.exe"}{Colors.END}")
+        print(
+            f"  Napcat路径: {Colors.CYAN}{self.services['napcat']['path']}{Colors.END}"
+        )
+        print(
+            f"  GIT路径:{Colors.CYAN}{self.base_path / 'PortableGit' / 'bin' / 'git.exe'}{Colors.END}"
+        )
         print("  文档网站:https://docs.mofox-sama.com/")
-        print("  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html")
+        print(
+            "  一键包使用教程:https://docs.mofox-sama.com/docs/guides/OneKey-Plus-Usage-Guide.html"
+        )
         print()
         print(Colors.green("快捷启动服务管理："))
         print("  1. 启动服务组合 →")
@@ -254,7 +260,7 @@ class MaiBotManager:
                 command = [str(service_path / main_file)]
                 if service_name == "VSCode":
                     command.append("./core/bot")
-                
+
                 try:
                     process = subprocess.Popen(
                         command,
@@ -262,7 +268,9 @@ class MaiBotManager:
                         creationflags=subprocess.CREATE_NEW_CONSOLE,
                     )
                 except FileNotFoundError:
-                    print(f"错误：路径 '{service_path}' 或可执行文件 '{main_file}' 未找到。")
+                    print(
+                        f"错误：路径 '{service_path}' 或可执行文件 '{main_file}' 未找到。"
+                    )
                 except OSError as e:
                     print(f"错误：启动服务 '{service_name}' 时发生操作系统错误：{e}")
                 except Exception as e:
@@ -309,15 +317,21 @@ class MaiBotManager:
             print(f"  {service['name']}: {status}")
 
     def start_sqlite_studio(self):
-        sqlite_studio_path = self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
+        sqlite_studio_path = (
+            self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
+        )
         db_path = self.base_path / "core" / "Bot" / "data" / "MaiBot.db"
 
         if not sqlite_studio_path.exists():
             print(Colors.red(f"❌ SQLiteStudio未找到: {sqlite_studio_path}"))
             return
-        
+
         if not db_path.exists():
-            print(Colors.red(f"❌ 数据库文件MaiBot.db未找到: {db_path},你可能需要启动一次主程序来生成"))
+            print(
+                Colors.red(
+                    f"❌ 数据库文件MaiBot.db未找到: {db_path},你可能需要启动一次主程序来生成"
+                )
+            )
             return
 
         try:
@@ -330,6 +344,7 @@ class MaiBotManager:
             print(Colors.green("✅ SQLiteStudio已启动"))
         except Exception as e:
             print(Colors.red(f"❌ 启动SQLiteStudio失败: {e}"))
+
     def install_requirements(self):
         while True:
             self.clear_screen()
@@ -364,14 +379,14 @@ class MaiBotManager:
             return
 
         print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
-        
+
         mirrors = [
             "https://pypi.tuna.tsinghua.edu.cn/simple",
             "https://pypi.doubanio.com/simple/",
             "http://mirrors.aliyun.com/pypi/simple/",
             "https://pypi.mirrors.ustc.edu.cn/simple/",
         ]
-        
+
         for mirror_url in mirrors:
             print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
             cmd = [
@@ -390,7 +405,7 @@ class MaiBotManager:
                 return
             else:
                 print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
-        
+
         print(Colors.red(f"❌ {service['name']} 依赖安装失败，所有镜像源均尝试失败。"))
 
     def _install_all_requirements(self):
@@ -399,10 +414,13 @@ class MaiBotManager:
                 self._install_service_requirements(service_key)
         print(Colors.green("所有依赖安装检查完成"))
 
-
     def _install_from_file(self):
         """从指定文件安装依赖"""
-        file_path_str = input(Colors.bold("请输入依赖文件的路径 (例如: C:\\Users\\YourName\\Desktop\\requirements.txt): ")).strip()
+        file_path_str = input(
+            Colors.bold(
+                "请输入依赖文件的路径 (例如: C:\\Users\\YourName\\Desktop\\requirements.txt): "
+            )
+        ).strip()
         requirements_file = Path(file_path_str)
 
         if not requirements_file.exists() or not requirements_file.is_file():
@@ -414,7 +432,9 @@ class MaiBotManager:
 
     def _install_specific_package(self):
         """安装指定的Python包"""
-        package_names = input(Colors.bold("请输入要安装的包名 (多个包请用空格隔开): ")).strip()
+        package_names = input(
+            Colors.bold("请输入要安装的包名 (多个包请用空格隔开): ")
+        ).strip()
         if not package_names:
             print(Colors.yellow("没有输入任何包名。"))
             return
@@ -434,16 +454,20 @@ class MaiBotManager:
 
         for mirror_url in mirrors:
             print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
-            cmd = [
-                str(self.python_executable),
-                "-m",
-                "pip",
-                "install",
-            ] + install_args + [
-                "-i",
-                mirror_url,
-            ]
-            
+            cmd = (
+                [
+                    str(self.python_executable),
+                    "-m",
+                    "pip",
+                    "install",
+                ]
+                + install_args
+                + [
+                    "-i",
+                    mirror_url,
+                ]
+            )
+
             success, _ = self.run_command(cmd)
             if success:
                 print(Colors.green("✅ 依赖安装成功!"))
@@ -455,11 +479,23 @@ class MaiBotManager:
 
     def open_config_file(self):
         config_files = [
-            ("Bot 核心配置", self.base_path / "core" / "Bot" / "config" / "bot_config.toml"),
-            ("模型相关配置", self.base_path / "core" / "Bot" / "config" / "model_config.toml"),
+            (
+                "Bot 核心配置",
+                self.base_path / "core" / "Bot" / "config" / "bot_config.toml",
+            ),
+            (
+                "模型相关配置",
+                self.base_path / "core" / "Bot" / "config" / "model_config.toml",
+            ),
             (
                 "Napcat 适配器配置",
-                self.base_path / "core" / "Bot" / "config" / "plugins" / "napcat_adapter" / "config.toml",
+                self.base_path
+                / "core"
+                / "Bot"
+                / "config"
+                / "plugins"
+                / "napcat_adapter"
+                / "config.toml",
             ),
         ]
         while True:
@@ -481,7 +517,6 @@ class MaiBotManager:
             except (ValueError, IndexError):
                 print(Colors.red("无效选择"))
             input("按回车键继续...")
-
 
     def open_data_folder(self):
         """打开数据文件夹"""
@@ -509,11 +544,17 @@ class MaiBotManager:
             return
 
         print(Colors.red(Colors.bold("警告：这是一个危险操作！")))
-        confirm = input(
-            Colors.yellow(f"你确定要删除数据库文件 '{db_path.name}' 吗？此操作无法撤销！(y/n): ")
-        ).strip().lower()
+        confirm = (
+            input(
+                Colors.yellow(
+                    f"你确定要删除数据库文件 '{db_path.name}' 吗？此操作无法撤销！(y/n): "
+                )
+            )
+            .strip()
+            .lower()
+        )
 
-        if confirm == 'y':
+        if confirm == "y":
             try:
                 os.remove(db_path)
                 print(Colors.green("✅ 数据库文件已成功删除。"))
@@ -536,7 +577,7 @@ class MaiBotManager:
             return
 
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
         except Exception as e:
             print(Colors.red(f"❌ 读取配置文件失败: {e}"))
@@ -569,14 +610,20 @@ class MaiBotManager:
                         for service, settings in config.items():
                             if "path" in settings:
                                 # 从绝对路径转换回相对路径以便存储
-                                settings["path"] = str(Path(settings["path"]).relative_to(self.base_path)).replace("\\", "/")
-                        
-                        with open(config_path, 'w', encoding='utf-8') as f:
+                                settings["path"] = str(
+                                    Path(settings["path"]).relative_to(self.base_path)
+                                ).replace("\\", "/")
+
+                        with open(config_path, "w", encoding="utf-8") as f:
                             json.dump(config, f, indent=4, ensure_ascii=False)
-                        
+
                         print(Colors.green(f"✅ 分支已设置为 {target_branch}。"))
-                        print(Colors.cyan("下次运行时，请手动执行“启动更新程序.bat”以应用更改。"))
-                        current_branch = target_branch # 更新显示
+                        print(
+                            Colors.cyan(
+                                "下次运行时，请手动执行“启动更新程序.bat”以应用更改。"
+                            )
+                        )
+                        current_branch = target_branch  # 更新显示
                     except Exception as e:
                         print(Colors.red(f"❌ 写入配置文件失败: {e}"))
                 input("按回车键继续...")
@@ -605,7 +652,9 @@ class MaiBotManager:
 
     def start_learning_tool(self):
         """启动知识库学习工具"""
-        script_path = self.base_path / "core" / "Bot" / "scripts" / "lpmm_learning_tool.py"
+        script_path = (
+            self.base_path / "core" / "Bot" / "scripts" / "lpmm_learning_tool.py"
+        )
         if not script_path.exists():
             print(Colors.red(f"❌ 学习工具脚本未找到: {script_path}"))
             return
