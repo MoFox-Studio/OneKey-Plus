@@ -7,11 +7,11 @@ mofox 一键管理程序
 2. 管理配置文件
 """
 
-import os
-import sys
 import io
 import json
+import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -63,12 +63,7 @@ class Colors:
 
 
 class MaiBotManager:
-    def is_bot_initialized(self):
-        """判断MoFox_Bot主程序是否已初始化（即core/Bot目录和.git存在）"""
-        bot_path = self.base_path / "core" / "Bot"
-        git_path = bot_path / ".git"
-        return bot_path.exists() and git_path.exists()
-
+    # ==================== 1. 初始化 ====================
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
@@ -95,6 +90,54 @@ class MaiBotManager:
             },
         }
 
+    # ==================== 2. 主程序运行逻辑 ====================
+    def run(self):
+        while True:
+            self.clear_screen()
+            self.print_header()
+            self.print_menu()
+
+            try:
+                choice = input(Colors.bold("请选择操作 (0-14): ")).strip()
+
+                actions = {
+                    "1": self.start_service_group,
+                    "2": lambda: self.start_service("bot"),
+                    "3": lambda: self.start_service("napcat"),
+                    "4": lambda: self.start_service("vscode"),
+                    "5": self.show_status,
+                    "6": self.start_sqlite_studio,
+                    "7": self.install_requirements,
+                    "8": self.show_system_info,
+                    "9": self.switch_bot_branch,
+                    "10": self.start_learning_tool,
+                    "11": self.open_config_file,
+                    "12": self.open_data_folder,
+                    "13": self.open_plugin_folder,
+                    "14": self.delete_database,
+                }
+
+                if choice == "0":
+                    print(Colors.green("程序退出"))
+                    break
+
+                if action := actions.get(choice):
+                    action()
+                else:
+                    print(Colors.red("无效选择"))
+
+                if choice != "0":
+                    input("\n按回车键返回主菜单...")
+
+            except KeyboardInterrupt:
+                print(Colors.yellow("\n检测到 Ctrl+C，正在安全退出..."))
+                self.stop_all_services()
+                break
+            except Exception as e:
+                print(Colors.red(f"发生错误: {e}"))
+                input("按回车键返回主菜单...")
+
+    # ==================== 3. UI界面与菜单 ====================
     def clear_screen(self):
         os.system("cls" if os.name == "nt" else "clear")
 
@@ -156,7 +199,40 @@ class MaiBotManager:
         print("     └─ 用于连接QQ平台")
         print()
         print(Colors.cyan("  0. 返回主菜单"))
+        
+    def show_status(self):
+        print(Colors.bold("服务运行状态："))
+        for service_key, service in self.services.items():
+            if process := self.running_processes.get(service_key):
+                if process.poll() is None:
+                    status = Colors.green("🟢 运行中")
+                else:
+                    status = Colors.red("🔴 已停止")
+                    del self.running_processes[service_key]
+            else:
+                status = Colors.yellow("⚪ 未启动")
+            print(f"  {service['name']}: {status}")
 
+    def show_system_info(self):
+        print(Colors.bold("系统信息："))
+        try:
+            result = subprocess.run(
+                [str(self.python_executable), "--version"],
+                capture_output=True,
+                text=True,
+            )
+            print(f"  Python版本: {Colors.green(result.stdout.strip())}")
+        except Exception:
+            print(f"  Python版本: {Colors.red('获取失败')}")
+        print(f"  工作目录: {Colors.cyan(str(self.base_path))}")
+        python_status = (
+            Colors.green("已配置")
+            if self.python_executable.exists()
+            else Colors.red("未配置")
+        )
+        print(f"  内置Python环境: {python_status}")
+
+    # ==================== 4. 核心服务管理 ====================
     def start_service_group(self):
         while True:
             self.clear_screen()
@@ -190,23 +266,6 @@ class MaiBotManager:
             if choice in ["1"]:
                 input("按回车键返回...")
                 return
-
-    def run_command(
-        self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True
-    ) -> tuple:
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=cwd,
-                capture_output=not show_output,
-                text=True,
-                encoding="utf-8",
-                errors="ignore",
-            )
-            return result.returncode == 0, result.stdout if not show_output else ""
-        except Exception as e:
-            print(Colors.red(f"命令执行失败: {e}"))
-            return False, str(e)
 
     def start_service(self, service_key: str):
         if service_key not in self.services:
@@ -305,180 +364,7 @@ class MaiBotManager:
                 )
         self.running_processes.clear()
 
-    def show_status(self):
-        print(Colors.bold("服务运行状态："))
-        for service_key, service in self.services.items():
-            if process := self.running_processes.get(service_key):
-                if process.poll() is None:
-                    status = Colors.green("🟢 运行中")
-                else:
-                    status = Colors.red("🔴 已停止")
-                    del self.running_processes[service_key]
-            else:
-                status = Colors.yellow("⚪ 未启动")
-            print(f"  {service['name']}: {status}")
-
-    def start_sqlite_studio(self):
-        sqlite_studio_path = (
-            self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
-        )
-        db_path = self.base_path / "core" / "Bot" / "data" / "MaiBot.db"
-
-        if not sqlite_studio_path.exists():
-            print(Colors.red(f"❌ SQLiteStudio未找到: {sqlite_studio_path}"))
-            return
-
-        if not db_path.exists():
-            print(
-                Colors.red(
-                    f"❌ 数据库文件MaiBot.db未找到: {db_path},你可能需要启动一次主程序来生成"
-                )
-            )
-            return
-
-        try:
-            print(Colors.blue("正在启动SQLiteStudio并加载数据库..."))
-            subprocess.Popen(
-                [str(sqlite_studio_path), str(db_path)],
-                cwd=str(sqlite_studio_path.parent),
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-            )
-            print(Colors.green("✅ SQLiteStudio已启动"))
-        except Exception as e:
-            print(Colors.red(f"❌ 启动SQLiteStudio失败: {e}"))
-
-    def install_requirements(self):
-        while True:
-            self.clear_screen()
-            print(Colors.bold("依赖包管理"))
-            print("  1. 更新 / 重装 Bot本体依赖")
-            print("  3. 更新 / 重装 所有依赖")
-            print("  4. 从指定依赖文件安装")
-            print("  5. 安装指定依赖包")
-            print("  0. 返回主菜单")
-
-            choice = input(Colors.bold("请选择操作 (0-5): ")).strip()
-
-            if choice == "0":
-                break
-            elif choice == "1":
-                self._install_service_requirements("bot")
-            elif choice == "3":
-                self._install_all_requirements()
-            elif choice == "4":
-                self._install_from_file()
-            elif choice == "5":
-                self._install_specific_package()
-            else:
-                print(Colors.red("无效选择"))
-            input("按回车键继续...")
-
-    def _install_service_requirements(self, service_key: str):
-        service = self.services[service_key]
-        requirements_file = service["path"] / "requirements.txt"
-        if not requirements_file.exists():
-            print(Colors.yellow(f"{service['name']} 没有 requirements.txt 文件。"))
-            return
-
-        print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
-
-        mirrors = [
-            "https://pypi.tuna.tsinghua.edu.cn/simple",
-            "https://pypi.doubanio.com/simple/",
-            "http://mirrors.aliyun.com/pypi/simple/",
-            "https://pypi.mirrors.ustc.edu.cn/simple/",
-        ]
-
-        for mirror_url in mirrors:
-            print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
-            cmd = [
-                str(self.python_executable),
-                "-m",
-                "pip",
-                "install",
-                "-r",
-                str(requirements_file),
-                "-i",
-                mirror_url,
-            ]
-            success, _ = self.run_command(cmd)
-            if success:
-                print(Colors.green(f"✅ {service['name']} 依赖安装完成"))
-                return
-            else:
-                print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
-
-        print(Colors.red(f"❌ {service['name']} 依赖安装失败，所有镜像源均尝试失败。"))
-
-    def _install_all_requirements(self):
-        for service_key in self.services:
-            if (self.services[service_key]["path"] / "requirements.txt").exists():
-                self._install_service_requirements(service_key)
-        print(Colors.green("所有依赖安装检查完成"))
-
-    def _install_from_file(self):
-        """从指定文件安装依赖"""
-        file_path_str = input(
-            Colors.bold(
-                "请输入依赖文件的路径 (例如: C:\\Users\\YourName\\Desktop\\requirements.txt): "
-            )
-        ).strip()
-        requirements_file = Path(file_path_str)
-
-        if not requirements_file.exists() or not requirements_file.is_file():
-            print(Colors.red(f"❌ 文件不存在或不是一个有效文件: {requirements_file}"))
-            return
-
-        print(Colors.blue(f"正在从 {requirements_file.name} 安装依赖..."))
-        self._execute_pip_install(["-r", str(requirements_file)])
-
-    def _install_specific_package(self):
-        """安装指定的Python包"""
-        package_names = input(
-            Colors.bold("请输入要安装的包名 (多个包请用空格隔开): ")
-        ).strip()
-        if not package_names:
-            print(Colors.yellow("没有输入任何包名。"))
-            return
-
-        packages = package_names.split()
-        print(Colors.blue(f"准备安装包: {', '.join(packages)}"))
-        self._execute_pip_install(packages)
-
-    def _execute_pip_install(self, install_args: List[str]):
-        """执行pip install命令，并尝试多个镜像源"""
-        mirrors = [
-            "https://pypi.tuna.tsinghua.edu.cn/simple",
-            "https://pypi.doubanio.com/simple/",
-            "http://mirrors.aliyun.com/pypi/simple/",
-            "https://pypi.mirrors.ustc.edu.cn/simple/",
-        ]
-
-        for mirror_url in mirrors:
-            print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
-            cmd = (
-                [
-                    str(self.python_executable),
-                    "-m",
-                    "pip",
-                    "install",
-                ]
-                + install_args
-                + [
-                    "-i",
-                    mirror_url,
-                ]
-            )
-
-            success, _ = self.run_command(cmd)
-            if success:
-                print(Colors.green("✅ 依赖安装成功!"))
-                return
-            else:
-                print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
-
-        print(Colors.red("❌ 依赖安装失败，所有镜像源均尝试失败。"))
-
+    # ==================== 5. BOT与文件管理 ====================
     def open_config_file(self):
         config_files = [
             (
@@ -565,6 +451,113 @@ class MaiBotManager:
         else:
             print(Colors.cyan("操作已取消。"))
 
+    # ==================== 6. 依赖与环境管理 ====================
+    def install_requirements(self):
+        while True:
+            self.clear_screen()
+            print(Colors.bold("依赖包管理"))
+            print("  1. 更新 / 重装 Bot本体依赖")
+            print("  3. 更新 / 重装 所有依赖")
+            print("  4. 从指定依赖文件安装")
+            print("  5. 安装指定依赖包")
+            print("  0. 返回主菜单")
+
+            choice = input(Colors.bold("请选择操作 (0-5): ")).strip()
+
+            if choice == "0":
+                break
+            elif choice == "1":
+                self._install_service_requirements("bot")
+            elif choice == "3":
+                self._install_all_requirements()
+            elif choice == "4":
+                self._install_from_file()
+            elif choice == "5":
+                self._install_specific_package()
+            else:
+                print(Colors.red("无效选择"))
+            input("按回车键继续...")
+
+    def _install_service_requirements(self, service_key: str):
+        service = self.services[service_key]
+        requirements_file = service["path"] / "requirements.txt"
+        if not requirements_file.exists():
+            print(Colors.yellow(f"{service['name']} 没有 requirements.txt 文件。"))
+            return
+
+        print(Colors.blue(f"正在安装 {service['name']} 的依赖..."))
+        self._execute_pip_install(["-r", str(requirements_file)])
+
+
+    def _install_all_requirements(self):
+        for service_key in self.services:
+            if (self.services[service_key]["path"] / "requirements.txt").exists():
+                self._install_service_requirements(service_key)
+        print(Colors.green("所有依赖安装检查完成"))
+
+    def _install_from_file(self):
+        """从指定文件安装依赖"""
+        file_path_str = input(
+            Colors.bold(
+                "请输入依赖文件的路径 (例如: C:\\Users\\YourName\\Desktop\\requirements.txt): "
+            )
+        ).strip()
+        requirements_file = Path(file_path_str)
+
+        if not requirements_file.exists() or not requirements_file.is_file():
+            print(Colors.red(f"❌ 文件不存在或不是一个有效文件: {requirements_file}"))
+            return
+
+        print(Colors.blue(f"正在从 {requirements_file.name} 安装依赖..."))
+        self._execute_pip_install(["-r", str(requirements_file)])
+
+    def _install_specific_package(self):
+        """安装指定的Python包"""
+        package_names = input(
+            Colors.bold("请输入要安装的包名 (多个包请用空格隔开): ")
+        ).strip()
+        if not package_names:
+            print(Colors.yellow("没有输入任何包名。"))
+            return
+
+        packages = package_names.split()
+        print(Colors.blue(f"准备安装包: {', '.join(packages)}"))
+        self._execute_pip_install(packages)
+
+    def _execute_pip_install(self, install_args: List[str]):
+        """执行pip install命令，并尝试多个镜像源"""
+        mirrors = [
+            "https://pypi.tuna.tsinghua.edu.cn/simple",
+            "https://pypi.doubanio.com/simple/",
+            "http://mirrors.aliyun.com/pypi/simple/",
+            "https://pypi.mirrors.ustc.edu.cn/simple/",
+        ]
+
+        for mirror_url in mirrors:
+            print(Colors.cyan(f"正在尝试使用镜像: {mirror_url}"))
+            cmd = (
+                [
+                    str(self.python_executable),
+                    "-m",
+                    "pip",
+                    "install",
+                ]
+                + install_args
+                + [
+                    "-i",
+                    mirror_url,
+                ]
+            )
+
+            success, _ = self.run_command(cmd)
+            if success:
+                print(Colors.green("✅ 依赖安装成功!"))
+                return
+            else:
+                print(Colors.red(f"❌ 使用镜像 {mirror_url} 安装失败，尝试下一个..."))
+
+        print(Colors.red("❌ 依赖安装失败，所有镜像源均尝试失败。"))
+        
     def switch_bot_branch(self):
         """切换MoFox_Bot主程序分支"""
         if not self.is_bot_initialized():
@@ -632,25 +625,36 @@ class MaiBotManager:
             else:
                 print(Colors.red("无效选择"))
                 input("按回车键继续...")
-
-    def show_system_info(self):
-        print(Colors.bold("系统信息："))
-        try:
-            result = subprocess.run(
-                [str(self.python_executable), "--version"],
-                capture_output=True,
-                text=True,
-            )
-            print(f"  Python版本: {Colors.green(result.stdout.strip())}")
-        except Exception:
-            print(f"  Python版本: {Colors.red('获取失败')}")
-        print(f"  工作目录: {Colors.cyan(str(self.base_path))}")
-        python_status = (
-            Colors.green("已配置")
-            if self.python_executable.exists()
-            else Colors.red("未配置")
+                
+    # ==================== 7. 其他工具 ====================
+    def start_sqlite_studio(self):
+        sqlite_studio_path = (
+            self.base_path / "core" / "SQLiteStudio" / "SQLiteStudio.exe"
         )
-        print(f"  内置Python环境: {python_status}")
+        db_path = self.base_path / "core" / "Bot" / "data" / "MaiBot.db"
+
+        if not sqlite_studio_path.exists():
+            print(Colors.red(f"❌ SQLiteStudio未找到: {sqlite_studio_path}"))
+            return
+
+        if not db_path.exists():
+            print(
+                Colors.red(
+                    f"❌ 数据库文件MaiBot.db未找到: {db_path},你可能需要启动一次主程序来生成"
+                )
+            )
+            return
+
+        try:
+            print(Colors.blue("正在启动SQLiteStudio并加载数据库..."))
+            subprocess.Popen(
+                [str(sqlite_studio_path), str(db_path)],
+                cwd=str(sqlite_studio_path.parent),
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            )
+            print(Colors.green("✅ SQLiteStudio已启动"))
+        except Exception as e:
+            print(Colors.red(f"❌ 启动SQLiteStudio失败: {e}"))
 
     def start_learning_tool(self):
         """启动知识库学习工具"""
@@ -677,52 +681,30 @@ class MaiBotManager:
             print(Colors.green("✅ 知识库学习工具已在新窗口启动"))
         except Exception as e:
             print(Colors.red(f"❌ 启动知识库学习工具失败: {e}"))
+            
+    # ==================== 8. 内部辅助函数 ====================
+    def is_bot_initialized(self):
+        """判断MoFox_Bot主程序是否已初始化（即core/Bot目录和.git存在）"""
+        bot_path = self.base_path / "core" / "Bot"
+        git_path = bot_path / ".git"
+        return bot_path.exists() and git_path.exists()
 
-    def run(self):
-        while True:
-            self.clear_screen()
-            self.print_header()
-            self.print_menu()
-
-            try:
-                choice = input(Colors.bold("请选择操作 (0-11): ")).strip()
-
-                actions = {
-                    "1": self.start_service_group,
-                    "2": lambda: self.start_service("bot"),
-                    "3": lambda: self.start_service("napcat"),
-                    "4": lambda: self.start_service("vscode"),
-                    "5": self.show_status,
-                    "6": self.start_sqlite_studio,
-                    "7": self.install_requirements,
-                    "8": self.show_system_info,
-                    "9": self.switch_bot_branch,
-                    "10": self.start_learning_tool,
-                    "11": self.open_config_file,
-                    "12": self.open_data_folder,
-                    "13": self.open_plugin_folder,
-                    "14": self.delete_database,
-                }
-
-                if choice == "0":
-                    print(Colors.green("程序退出"))
-                    break
-
-                if action := actions.get(choice):
-                    action()
-                else:
-                    print(Colors.red("无效选择"))
-
-                if choice != "0":
-                    input("\n按回车键返回主菜单...")
-
-            except KeyboardInterrupt:
-                print(Colors.yellow("\n检测到 Ctrl+C，正在安全退出..."))
-                self.stop_all_services()
-                break
-            except Exception as e:
-                print(Colors.red(f"发生错误: {e}"))
-                input("按回车键返回主菜单...")
+    def run_command(
+        self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True
+    ) -> tuple:
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=not show_output,
+                text=True,
+                encoding="utf-8",
+                errors="ignore",
+            )
+            return result.returncode == 0, result.stdout if not show_output else ""
+        except Exception as e:
+            print(Colors.red(f"命令执行失败: {e}"))
+            return False, str(e)
 
 
 if __name__ == "__main__":
