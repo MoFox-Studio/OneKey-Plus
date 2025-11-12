@@ -259,7 +259,7 @@ class MaiBotManager:
             elif service_type == "exe":
                 command = [str(service_path / main_file)]
                 if service_name == "VSCode":
-                    command.append("./core/bot")
+                    command.append(" /core/Bot")
 
                 try:
                     process = subprocess.Popen(
@@ -529,7 +529,7 @@ class MaiBotManager:
 
     def open_plugin_folder(self):
         """打开插件文件夹"""
-        plugin_path = self.base_path / "core" / "Bot" / "plugin"
+        plugin_path = self.base_path / "core" / "Bot" / "plugins"
         if plugin_path.exists():
             os.startfile(plugin_path)
             print(Colors.green(f"✅ 已尝试打开插件文件夹: {plugin_path}"))
