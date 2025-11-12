@@ -259,7 +259,9 @@ class MaiBotManager:
             elif service_type == "exe":
                 command = [str(service_path / main_file)]
                 if service_name == "VSCode":
-                    command.append(" /core/Bot")
+                    command.append("-n")
+                    # 将工作区路径作为独立参数传递
+                    command.append(str(self.base_path / "core" / "Bot"))
 
                 try:
                     process = subprocess.Popen(
