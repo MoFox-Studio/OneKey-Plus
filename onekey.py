@@ -57,7 +57,7 @@ class MaiBotManager:
                 "path": self.base_path / "Bot",
                 "main_file": "bot.py",
                 "description": "AI聊天机器人主程序",
-                "repo_url": "https://github.com/MoFox-Studio/MoFox_Bot.git",
+                "repo_url": "https://github.com/MoFox-Studio/MoFox-Core.git",
                 "type": "python"
             },
             "adapter": {
@@ -573,53 +573,54 @@ class MaiBotManager:
     def _update_public_repo(self, service: dict, repo_path: Path) -> bool:
         """更新公开仓库"""
         try:
-            # 获取仓库URL
-            repo_url = service.get("repo_url", "")
-            if not repo_url.startswith("https://github.com/"):
-                print(Colors.red("不支持的仓库URL格式"))
-                return False
-            
             # 设置环境变量以禁用Git交互提示
             env = os.environ.copy()
             env['GIT_TERMINAL_PROMPT'] = '0'
-            env['GIT_ASKPASS'] = ''
-            env['SSH_ASKPASS'] = ''
-            env['GCM_INTERACTIVE'] = 'never'  # 禁用Git Credential Manager
-            
-            # 确保远程URL是正确的
-            set_url_cmd = ['git', 'remote', 'set-url', 'origin', repo_url]
-            success, output = self.run_command_with_env(set_url_cmd, cwd=repo_path, env=env, show_output=False)
-            
-            if not success:
-                stderr = output.get('stderr', '') if isinstance(output, dict) else str(output)
-                print(Colors.red(f"设置远程URL失败: {stderr}"))
+            env['GCM_INTERACTIVE'] = 'never'
+
+            # 1. 确保本地在 dev 分支并尝试拉取更新
+            print(Colors.cyan("正在切换到 dev 分支..."))
+            switch_cmd = ['git', 'checkout', 'dev']
+            switch_success, _ = self.run_command_with_env(
+                switch_cmd, cwd=repo_path, env=env, show_output=False
+            )
+            if not switch_success:
+                print(Colors.red("❌ 切换到 dev 分支失败，请检查本地仓库是否存在 dev 分支。"))
                 return False
-            
-            # 执行 git pull
-            pull_success, pull_output = self.run_command_with_env(['git', 'pull'], cwd=repo_path, env=env, show_output=False)
-            
+
+            print(Colors.cyan("正在从远程仓库的 dev 分支拉取更新..."))
+            pull_cmd = ['git', 'pull', 'origin', 'dev']
+            pull_success, pull_output = self.run_command_with_env(
+                pull_cmd, cwd=repo_path, env=env, show_output=False
+            )
+
             if pull_success:
-                stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else str(pull_output)
-                # print(Colors.green("✅ 仓库更新成功"))  # 不需要这个print因为有重复
-                if stdout.strip() and "Already up to date" not in stdout:
-                    print(Colors.cyan(f"更新信息: {stdout.strip()}"))
+                stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else ''
+                if "Already up to date" not in stdout:
+                    print(Colors.green("✅ 仓库更新成功！"))
+                    print(Colors.cyan(f"更新信息: \n{stdout.strip()}"))
+                else:
+                    print(Colors.green("✅ 仓库已是最新状态。"))
                 return True
             else:
-                stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else ''
+                # 2. 如果失败，提示用户手动处理
                 stderr = pull_output.get('stderr', '') if isinstance(pull_output, dict) else str(pull_output)
-                returncode = pull_output.get('returncode', -1) if isinstance(pull_output, dict) else -1
-                
-                print(Colors.red(f"仓库更新失败"))
-                print(Colors.yellow("详细错误信息:"))
-                print(Colors.yellow(f"  返回码: {returncode}"))
-                if stdout.strip():
-                    print(Colors.yellow(f"  标准输出: {stdout.strip()}"))
-                if stderr.strip():
-                    print(Colors.yellow(f"  错误输出: {stderr.strip()}"))
+                print(Colors.red("❌ 仓库更新失败！"))
+                print(Colors.yellow("失败原因很可能是因为你本地有修改，与远程仓库的更新冲突了。"))
+                print(Colors.yellow("为了保护你的修改不被覆盖，程序已停止更新。"))
+                print()
+                print(Colors.bold("解决方案："))
+                print(Colors.cyan(f"  1. 请手动进入仓库目录: {repo_path}"))
+                print(Colors.cyan("  2. 使用 `git status` 命令查看是哪些文件被修改了。"))
+                print(Colors.cyan("  3. 如果这些修改是你需要的，请先将它们备份到其他地方。"))
+                print(Colors.cyan("  4. 备份后，使用 `git reset --hard` 命令放弃本地修改，然后再重新运行本更新程序。"))
+                print()
+                print(Colors.red("详细错误信息如下："))
+                print(f"{stderr.strip()}")
                 return False
-                        
+
         except Exception as e:
-            print(Colors.red(f"仓库更新出错: {e}"))
+            print(Colors.red(f"仓库更新过程中发生未知错误: {e}"))
             import traceback
             print(Colors.red(f"详细错误: {traceback.format_exc()}"))
             return False
@@ -768,7 +769,7 @@ class MaiBotManager:
         input(Colors.blue("按回车键继续..."))
     
     def check_repository_status(self, service_key):
-        """检查指定仓库的commit状态（支持Token认证）"""
+        """检查指定仓库的commit状态"""
         if service_key not in self.services:
             print(Colors.red(f"未找到服务: {service_key}"))
             return
@@ -789,141 +790,62 @@ class MaiBotManager:
         print(f"路径: {Colors.cyan(str(repo_path))}")
         print()
         
-        # 获取GitHub Token
-        github_token = self._get_github_token()
-        
         try:
-            # 切换到仓库目录
-            original_cwd = os.getcwd()
-            os.chdir(repo_path)
-            
             # 设置环境变量禁用Git交互
             env = os.environ.copy()
-            env['GIT_TERMINAL_PROMPT'] = '0'  # 禁用终端提示
-            env['GIT_ASKPASS'] = 'echo'       # 禁用密码提示
-            env['SSH_ASKPASS'] = 'echo'       # 禁用SSH密码提示
-            env['GCM_INTERACTIVE'] = 'never'  # 禁用Git Credential Manager
-            
-            # 如果有token，先设置认证URL
-            original_url = None
-            if github_token:
-                print(Colors.blue("使用Token认证获取远程仓库更新..."))
-                
-                # 获取原始URL
-                get_url_result = subprocess.run(
-                    ["git", "remote", "get-url", "origin"], 
-                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                )
-                
-                if get_url_result.returncode == 0:
-                    original_url = get_url_result.stdout.strip()
-                    
-                    # 构造带token的URL
-                    if original_url.startswith("https://github.com/"):
-                        auth_url = original_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        
-                        # 临时设置认证URL
-                        set_url_result = subprocess.run(
-                            ["git", "remote", "set-url", "origin", auth_url], 
-                            capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                        )
-                        
-                        if set_url_result.returncode != 0:
-                            print(Colors.yellow("设置认证URL失败，使用普通方式检查"))
-                            github_token = None
-            else:
-                print(Colors.blue("正在获取远程仓库更新..."))
-            
-            # 获取远程更新
-            fetch_result = subprocess.run(
-                ["git", "fetch", "origin"], 
-                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+            env['GIT_TERMINAL_PROMPT'] = '0'
+            env['GCM_INTERACTIVE'] = 'never'
+
+            # 1. 获取远程更新
+            print(Colors.blue("正在获取远程仓库更新..."))
+            fetch_success, fetch_output = self.run_command_with_env(
+                ['git', 'fetch'], cwd=repo_path, env=env, show_output=False
             )
-            
-            # 恢复原始URL（如果使用了token）
-            if github_token and original_url:
-                subprocess.run(
-                    ["git", "remote", "set-url", "origin", original_url], 
-                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                )
-            
-            if fetch_result.returncode != 0:
-                print(Colors.red(f"获取远程更新失败: {fetch_result.stderr}"))
-                if github_token:
-                    print(Colors.yellow("提示：Token认证获取失败，可能是网络问题或Token权限不足"))
-                else:
-                    print(Colors.yellow("提示：未使用Token认证，可能因为网络限制导致失败"))
+            if not fetch_success:
+                stderr = fetch_output.get('stderr', '') if isinstance(fetch_output, dict) else str(fetch_output)
+                print(Colors.red(f"获取远程更新失败: {stderr}"))
                 return
-            else:
-                if github_token:
-                    print(Colors.green("✅ 使用Token认证成功获取远程更新"))
-                else:
-                    print(Colors.green("✅ 成功获取远程更新"))
-            
-            # 获取当前分支
-            branch_result = subprocess.run(
-                ["git", "branch", "--show-current"], 
-                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
+            print(Colors.green("✅ 成功获取远程更新"))
+
+            # 2. 切换到 dev 分支
+            print(Colors.cyan("正在切换到 dev 分支以进行状态检查..."))
+            switch_cmd = ['git', 'checkout', 'dev']
+            switch_success, switch_output = self.run_command_with_env(
+                switch_cmd, cwd=repo_path, env=env, show_output=False
             )
-            current_branch = branch_result.stdout.strip() or "master"
-            
-            # 检查本地与远程的差异
-            log_result = subprocess.run(
-                ["git", "log", f"HEAD..origin/{current_branch}", "--oneline"], 
-                capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-            )
-            
-            if log_result.returncode != 0:
-                print(Colors.red(f"检查commit差异失败: {log_result.stderr}"))
+            if not switch_success:
+                stderr = switch_output.get('stderr', '') if isinstance(switch_output, dict) else ''
+                print(Colors.red(f"❌ 切换到 dev 分支失败: {stderr}"))
                 return
+
+            # 3. 检查本地与远程 dev 分支的差异
+            status_cmd = ['git', 'status', '-sb'] # 使用 -sb 参数获取简短格式的状态
+            status_success, status_output = self.run_command_with_env(status_cmd, cwd=repo_path, env=env, show_output=False)
             
-            commits_behind = log_result.stdout.strip()
-            
-            if not commits_behind:
-                print(Colors.green("✅ 仓库已是最新状态，没有落后的commit"))
+            if status_success:
+                stdout = status_output.get('stdout', '').strip() if isinstance(status_output, dict) else ''
+                if not stdout:
+                    print(Colors.red("无法获取仓库状态。"))
+                    return
+
+                first_line = stdout.split('\n')[0]
+                if '## dev...origin/dev' in first_line:
+                    if 'ahead' in first_line:
+                        print(Colors.yellow(f"本地仓库领先于远程仓库: {first_line}"))
+                        print(Colors.cyan("提示：你可以使用 `git push` 将本地的修改推送到远程仓库。"))
+                    elif 'behind' in first_line:
+                        print(Colors.yellow(f"检测到新版本! 本地仓库落后于远程仓库: {first_line}"))
+                        print(Colors.cyan("提示：请使用菜单中的更新功能来获取最新版本。"))
+                    else:
+                        print(Colors.green("✅ 仓库已是最新状态，与远程 dev 分支保持同步。"))
+                else:
+                     print(Colors.cyan(f"仓库状态信息：\n{stdout}"))
+
             else:
-                commit_lines = commits_behind.split('\n')
-                commit_count = len(commit_lines)
-                
-                print(Colors.yellow(f"你的本地仓库落后了 {commit_count} 个commit"))
-                print()
-                print(Colors.bold("落后的commit详情："))
-                print("-" * 50)
-                
-                for i, commit_line in enumerate(commit_lines, 1):
-                    if commit_line.strip():
-                        commit_hash = commit_line.split()[0]
-                        commit_message = ' '.join(commit_line.split()[1:])
-                        print(f"{Colors.cyan(f'{i:2d}.')} {Colors.yellow(commit_hash)} {commit_message}")
-                
-                print("-" * 50)
-                
-                # 显示详细的commit信息
-                print()
-                print(Colors.bold("详细的commit信息："))
-                print("=" * 60)
-                
-                detail_result = subprocess.run(
-                    ["git", "log", f"HEAD..origin/{current_branch}", "--pretty=format:%h - %an, %ar : %s", "-10"], 
-                    capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env
-                )
-                
-                if detail_result.returncode == 0 and detail_result.stdout.strip():
-                    for line in detail_result.stdout.strip().split('\n'):
-                        if line.strip():
-                            parts = line.split(' - ', 1)
-                            if len(parts) == 2:
-                                commit_hash = parts[0]
-                                rest = parts[1]
-                                print(f"{Colors.green(commit_hash)} - {rest}")
-                
-                print("=" * 60)
-                
+                print(Colors.red("检查仓库状态失败。"))
+
         except Exception as e:
             print(Colors.red(f"检查仓库状态时发生错误: {e}"))
-        finally:
-            # 恢复原始工作目录
-            os.chdir(original_cwd)
         
         print()
     
