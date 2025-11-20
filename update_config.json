@@ -2,7 +2,7 @@
     "bot": {
         "name": "MoFox_Bot 主程序",
         "path": "core/Bot",
-        "repo_url": "https://github.com/MoFox-Studio/MoFox_Bot.git",
+        "repo_url": "https://github.com/MoFox-Studio/MoFox-Core.git",
         "branch": "master"
     },
     "onekey": {
