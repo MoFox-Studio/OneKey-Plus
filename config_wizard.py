@@ -4,6 +4,7 @@ import os
 import re
 import json
 import subprocess
+import copy
 from collections.abc import MutableMapping
 
 # --- 路径定义 ---
@@ -29,9 +30,6 @@ BOT_CONFIG_COMMENTS = {
 
 # Napcat 适配器配置的注释
 NAPCAT_CONFIG_COMMENTS = {
-    "plugin": {
-        "enabled": "要不要启用 Napcat 适配器？没它 Bot 可没法在 QQ 里说话哦。填 true 或 false。"
-    },
     "features": {
         "group_list_type": "群聊的准入模式：'whitelist' - 只在名单上的群里说话, 'blacklist' - 除了名单上的群，其他都说话。",
         "group_list": "把要加入白名单或黑名单的群号都扔到这里，用逗号或空格隔开。",
@@ -270,6 +268,18 @@ def configure_napcat_adapter():
         print("\n--- 开始配置 `napcat_adapter_config.toml` (QQ适配器) ---")
         print("在这里，你可以调整 Bot 在 QQ 中的具体行为。")
 
+        # --- 自动启用插件，不再询问 ---
+        # 检查 'plugin' section 是否存在
+        if "plugin" in config:
+            plugin_section = config["plugin"]
+            # 确保 'plugin' section 是一个可变映射 (例如 tomlkit.Table)
+            if isinstance(plugin_section, MutableMapping):
+                # 如果插件当前值为 False 或键不存在，则自动启用并通知用户
+                if not plugin_section.get("enabled", False):
+                    plugin_section["enabled"] = True
+                    print("-> 检测到 Napcat 适配器插件未启用或配置缺失，已自动为您开启。")
+
+        # 使用处理过的注释来提问其他配置
         ask_for_config(config, NAPCAT_CONFIG_COMMENTS)
 
         with open(NAPCAT_ADAPTER_CONFIG_PATH, "w", encoding="utf-8") as f:
