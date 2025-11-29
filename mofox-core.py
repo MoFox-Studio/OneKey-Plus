@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MaiBot-Plus 一键管理程序 (Linux版本)
+MoFox-Core 一键管理程序 (Linux版本)
 功能：
-1. 启动各种服务（Bot、Adapter、Matcha-Adapter）
+1. 启动各种服务（Bot、Napcat、Matcha）
 2. 更新GitHub仓库
 3. 管理配置文件
 """
@@ -45,7 +45,7 @@ class Colors:
     @staticmethod
     def bold(text): return f"{Colors.BOLD}{text}{Colors.END}"
 
-class MaiBotManager:
+class MoFoxManager:
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
         self.venv_python = self.base_path / ".venv" / "bin" / "python"
@@ -57,27 +57,11 @@ class MaiBotManager:
         # 服务配置
         self.services = {
             "bot": {
-                "name": "MaiBot 主程序",
+                "name": "MoFox Core 主程序",
                 "path": self.base_path / "Bot",
                 "main_file": "bot.py",
                 "description": "AI聊天机器人主程序",
-                "repo_url": "https://github.com/MaiBot-Plus/MaiMbot-Pro-Max.git",
-                "type": "python"
-            },
-            "adapter": {
-                "name": "Napcat Adapter",
-                "path": self.base_path / "Adapter",
-                "main_file": "main.py",
-                "description": "QQ消息适配器",
-                "repo_url": "https://github.com/MaiBot-Plus/Napcat-Adapter.git",
-                "type": "python"
-            },
-            "matcha_adapter": {
-                "name": "Matcha Adapter",
-                "path": self.base_path / "Matcha-Adapter",
-                "main_file": "main.py", 
-                "description": "Matcha消息适配器",
-                "repo_url": "https://github.com/MaiBot-Plus/Matcha-Adapter.git",
+                "repo_url": "https://github.com/MoFox-Studio/MoFox-Core.git",
                 "type": "python"
             },
             "napcat": {
@@ -105,7 +89,7 @@ class MaiBotManager:
     def print_header(self):
         """打印程序头部"""
         print("=" * 60)
-        print(Colors.cyan(Colors.bold("          MaiBot-Plus 一键管理程序 (Linux)")))
+        print(Colors.cyan(Colors.bold("          MoFox-Core 一键管理程序 (Linux)")))
         print(Colors.yellow("              Version 1.0"))
         print("=" * 60)
         print(Colors.blue("Edited by 阿范 @212898630"))
@@ -124,92 +108,32 @@ class MaiBotManager:
         print(Colors.bold("主菜单："))
         print()
         print(Colors.green("快捷启动服务管理："))
-        print("  1. 启动服务组合 →")
-        print("  2. 启动 MaiBot 主程序")
-        print("  3. 启动 Napcat Adapter")
-        print("  4. 启动 Napcat 服务")
-        print("  5. 启动 Matcha Adapter")
-        print("  6. 启动 Matcha 程序")
-        print("  7. 查看运行状态")
-        print("  8. 启动数据库管理程序 (暂不支持Linux)")
+        print("  1. 启动 MoFox Core 主程序")
+        print("  2. 启动 Napcat 服务")
+        print("  3. 启动 Matcha 程序")
+        print("  4. 查看运行状态")
+        print("  5. 启动数据库管理程序 (暂不支持Linux)")
         print()
         print(Colors.blue("更新管理："))
-        print("  9. 更新 Bot 仓库")
-        print("  10. 更新 Adapter 仓库")
-        print("  11. 更新 Matcha-Adapter 仓库")
-        print("  12. 更新所有仓库")
+        print("  6. 更新 Bot 仓库")
         print()
         print(Colors.yellow("其他功能："))
-        print("  13. 安装/更新依赖包")
-        print("  14. 查看系统信息")
-        print("  18. 尝试自我修复 pip 权限问题（仅供测试，安装依赖报错时使用）")
+        print("  7. 安装/更新依赖包")
+        print("  8. 查看系统信息")
+        print("  9. 尝试自我修复 pip 权限问题（仅供测试，安装依赖报错时使用）")
         print()
         print(Colors.yellow("仓库状态检查："))
-        print("  15. 检查 MaiBot-Pro-Max 仓库状态")
-        print("  16. 检查 Adapter 仓库状态")
-        print("  17. 检查 Matcha-Adapter 仓库状态")
+        print("  10. 检查 MoFox-Core 仓库状态")
         print("  0. 退出程序")
         print()
     
     def print_service_groups_menu(self):
         """打印服务组合菜单"""
-        print(Colors.bold("选择启动组："))
-        print()
-        print(Colors.green("  1. QQ机器人组合"))
-        print("     └─ MaiBot主程序 + Napcat Adapter + Napcat服务")
-        print("     └─ 用于连接QQ平台")
-        print()
-        print(Colors.green("  2. Matcha机器人组合"))  
-        print("     └─ MaiBot主程序 + Matcha Adapter + Matcha程序")
-        print("     └─ 用于连接Matcha平台")
-        print()
-        print(Colors.cyan("  0. 返回主菜单"))
-        print()
+        pass
     
     def start_service_group(self):
         """启动服务组合"""
-        while True:
-            self.clear_screen()
-            self.print_header()
-            self.print_service_groups_menu()
-            
-            choice = input(Colors.bold("请选择组合 (0-2): ")).strip()
-            
-            if choice == '0':
-                return
-            elif choice == '1':
-                print(Colors.blue("正在启动QQ机器人组合..."))
-                print()
-                success_count = 0
-                services = ['bot', 'adapter', 'napcat']
-                for service in services:
-                    if self.start_service(service):
-                        success_count += 1
-                        time.sleep(2)
-                
-                print()
-                print(Colors.green(f"✅ QQ机器人组合启动完成 ({success_count}/{len(services)} 个服务成功)"))
-                
-            elif choice == '2':
-                print(Colors.blue("正在启动Matcha机器人组合..."))
-                print()
-                success_count = 0
-                services = ['bot', 'matcha_adapter', 'matcha']
-                for service in services:
-                    if self.start_service(service):
-                        success_count += 1
-                        time.sleep(2)
-                
-                print()
-                print(Colors.green(f"✅ Matcha机器人组合启动完成 ({success_count}/{len(services)} 个服务成功)"))
-                
-            else:
-                print(Colors.red("无效选择，请输入 0-2 之间的数字"))
-            
-            if choice in ['1', '2']:
-                print()
-                input("按回车键返回...")
-                return
+        pass
     
     def run_command(self, cmd: List[str], cwd: Optional[Path] = None, show_output: bool = True) -> tuple:
         """运行命令"""
@@ -734,52 +658,33 @@ class MaiBotManager:
                 self.print_menu()
                 
                 try:
-                    choice = input(Colors.bold("请选择操作 (0-18): ")).strip()
+                    choice = input(Colors.bold("请选择操作 (0-10): ")).strip()
                     
                     if choice == '0':
                         print(Colors.green("程序退出，感谢使用！"))
                         break
                     elif choice == '1':
-                        self.start_service_group()
-                    elif choice == '2':
                         self.start_service('bot')
-                    elif choice == '3':
-                        self.start_service('adapter')
-                    elif choice == '4':
+                    elif choice == '2':
                         self.start_service('napcat')
-                    elif choice == '5':
-                        self.start_service('matcha_adapter')
-                    elif choice == '6':
+                    elif choice == '3':
                         self.start_service('matcha')
-                    elif choice == '7':
+                    elif choice == '4':
                         self.show_status()
-                    elif choice == '8':
+                    elif choice == '5':
                         self.start_sqlite_studio()
-                    elif choice == '9':
+                    elif choice == '6':
                         self.update_repository('bot')
-                    elif choice == '10':
-                        self.update_repository('adapter')
-                    elif choice == '11':
-                        self.update_repository('matcha_adapter')
-                    elif choice == '12':
-                        print(Colors.blue("正在更新所有仓库..."))
-                        for service_key in ['bot', 'adapter', 'matcha_adapter']:
-                            if self.services[service_key].get("repo_url"):
-                                self.update_repository(service_key)
-                    elif choice == '13':
+                    elif choice == '7':
                         self.install_requirements()
-                    elif choice == '14':
+                    elif choice == '8':
                         self.show_system_info()
-                    elif choice == '15':
-                        self.check_repository_status('bot')
-                    elif choice == '16':
-                        self.check_repository_status('adapter')
-                    elif choice == '17':
-                        self.check_repository_status('matcha_adapter')
-                    elif choice == '18':
+                    elif choice == '9':
                         self.fix_pip_permissions()
+                    elif choice == '10':
+                        self.check_repository_status('bot')
                     else:
-                        print(Colors.red("无效选择，请输入 0-18 之间的数字"))
+                        print(Colors.red("无效选择，请输入 0-10 之间的数字"))
                     
                     if choice != '0':
                         print()
@@ -798,5 +703,5 @@ class MaiBotManager:
             self.stop_all_services()
 
 if __name__ == "__main__":
-    manager = MaiBotManager()
+    manager = MoFoxManager()
     manager.run()

@@ -5,7 +5,7 @@ export LANG=zh_CN.UTF-8
 export LC_ALL=zh_CN.UTF-8
 
 echo "========================================"
-echo "      MaiBot-Plus 一键启动程序"
+echo "      MoFox-Core 一键启动程序"
 echo "========================================"
 echo
 
@@ -14,7 +14,7 @@ CALL_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-SCRIPT_FILENAME="onekey_linux.py"
+SCRIPT_FILENAME="mofox-core.py"
 SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_FILENAME"
 
 # 解析可选参数
@@ -89,7 +89,7 @@ fi
 if [ ! -f "$SCRIPT_PATH" ]; then
     echo "❌ 错误：未找到 $SCRIPT_FILENAME 文件！"
     echo
-    echo "请确保此脚本位于MaiBot-Plus项目根目录中，或通过 -s/--script-path 参数指定 $SCRIPT_FILENAME 文件路径"
+    echo "请确保此脚本位于MoFox-Core项目根目录中，或通过 -s/--script-path 参数指定 $SCRIPT_FILENAME 文件路径"
     echo "当前目录：$SCRIPT_DIR"
     echo "尝试的脚本路径：$SCRIPT_PATH"
     echo
@@ -124,10 +124,10 @@ fi
 
 echo "✅ 环境检查通过"
 echo
-echo "启动 MaiBot-Plus 管理程序..."
+echo "启动 MoFox-Core 管理程序..."
 echo "========================================"
 
-# 启动onekey_linux.py
+# 启动mofox-core.py
 "$PYTHON_PATH" "$SCRIPT_PATH"
 EXIT_CODE=$?
 

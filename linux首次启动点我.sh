@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "========================================"
-echo "       MaiBot-Plus 首次启动配置"
+echo "       MoFox-Core 首次启动配置"
 echo "========================================"
 echo
 echo "本程序将为您完成以下操作："
@@ -110,7 +110,7 @@ echo
 SUCCESS_COUNT=0
 TOTAL_COUNT=0
 
-for dir in "Bot" "Adapter" "Matcha-Adapter"; do
+for dir in "Bot"; do
     if [ -f "$dir/requirements.txt" ]; then
         TOTAL_COUNT=$((TOTAL_COUNT + 1))
         echo "正在安装 $dir 的依赖包..."
@@ -152,14 +152,14 @@ echo "步骤4：启动主程序..."
 echo
 
 # 直接启动主程序
-"$PYTHON_PATH" onekey_linux.py
+"$PYTHON_PATH" mofox-core.py
 
 echo
 echo "========================================"
-echo "   MaiBot-Plus 环境配置完成！"
+echo "   MoFox-Core 环境配置完成！"
 echo
 echo "   下次使用请直接运行："
-echo "   \"./启动一键包程序.sh\""
+echo "   \"./linux启动点我.sh\""
 echo
 echo "  如需重新配置环境，请重新运行此脚本"
 echo "========================================"
