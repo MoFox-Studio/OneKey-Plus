@@ -604,10 +604,16 @@ class MaiBotManager:
                         # 写回JSON文件，注意路径的处理
                         for service, settings in config.items():
                             if "path" in settings:
-                                # 从绝对路径转换回相对路径以便存储
-                                settings["path"] = str(
-                                    Path(settings["path"]).relative_to(self.base_path)
-                                ).replace("\\", "/")
+                                path_obj = Path(settings["path"])
+                                # 如果不是绝对路径，说明已经是相对路径，保持不变
+                                if path_obj.is_absolute():
+                                    # 从绝对路径转换回相对路径以便存储
+                                    settings["path"] = str(
+                                        path_obj.relative_to(self.base_path)
+                                    ).replace("\\", "/")
+                                else:
+                                    # 已经是相对路径，只需统一斜杠格式
+                                    settings["path"] = str(settings["path"]).replace("\\", "/")
 
                         with open(config_path, "w", encoding="utf-8") as f:
                             json.dump(config, f, indent=4, ensure_ascii=False)
