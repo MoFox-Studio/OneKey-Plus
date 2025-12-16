@@ -3,7 +3,7 @@
 """
 MoFox-Core 一键管理程序 (Linux版本)
 功能：
-1. 启动各种服务（Bot、Napcat、Matcha）
+1. 启动 MoFox Core 主程序
 2. 更新GitHub仓库
 3. 管理配置文件
 """
@@ -63,22 +63,6 @@ class MoFoxManager:
                 "description": "AI聊天机器人主程序",
                 "repo_url": "https://github.com/MoFox-Studio/MoFox-Core.git",
                 "type": "python"
-            },
-            "napcat": {
-                "name": "Napcat 服务",
-                "path": self.base_path / "Napcat" / "Shell",
-                "main_file": "napcat.sh",
-                "description": "QQ协议服务 (Linux)",
-                "repo_url": None,
-                "type": "shell"
-            },
-            "matcha": {
-                "name": "Matcha 程序",
-                "path": self.base_path / "Matcha",
-                "main_file": "matcha", # Linux下的可执行文件名
-                "description": "Matcha客户端程序 (Linux)",
-                "repo_url": None,
-                "type": "executable"
             }
         }
     
@@ -109,21 +93,19 @@ class MoFoxManager:
         print()
         print(Colors.green("快捷启动服务管理："))
         print("  1. 启动 MoFox Core 主程序")
-        print("  2. 启动 Napcat 服务")
-        print("  3. 启动 Matcha 程序")
-        print("  4. 查看运行状态")
-        print("  5. 启动数据库管理程序 (暂不支持Linux)")
+        print("  2. 查看运行状态")
+        print("  3. 启动数据库管理程序 (暂不支持Linux)")
         print()
         print(Colors.blue("更新管理："))
-        print("  6. 更新 Bot 仓库")
+        print("  4. 更新 Bot 仓库")
         print()
         print(Colors.yellow("其他功能："))
-        print("  7. 安装/更新依赖包")
-        print("  8. 查看系统信息")
-        print("  9. 尝试自我修复 pip 权限问题（仅供测试，安装依赖报错时使用）")
+        print("  5. 安装/更新依赖包")
+        print("  6. 查看系统信息")
+        print("  7. 尝试自我修复 pip 权限问题（仅供测试，安装依赖报错时使用）")
         print()
         print(Colors.yellow("仓库状态检查："))
-        print("  10. 检查 MoFox-Core 仓库状态")
+        print("  8. 检查 MoFox-Core 仓库状态")
         print("  0. 退出程序")
         print()
     
@@ -658,7 +640,7 @@ class MoFoxManager:
                 self.print_menu()
                 
                 try:
-                    choice = input(Colors.bold("请选择操作 (0-10): ")).strip()
+                    choice = input(Colors.bold("请选择操作 (0-8): ")).strip()
                     
                     if choice == '0':
                         print(Colors.green("程序退出，感谢使用！"))
@@ -666,25 +648,21 @@ class MoFoxManager:
                     elif choice == '1':
                         self.start_service('bot')
                     elif choice == '2':
-                        self.start_service('napcat')
-                    elif choice == '3':
-                        self.start_service('matcha')
-                    elif choice == '4':
                         self.show_status()
-                    elif choice == '5':
+                    elif choice == '3':
                         self.start_sqlite_studio()
-                    elif choice == '6':
+                    elif choice == '4':
                         self.update_repository('bot')
-                    elif choice == '7':
+                    elif choice == '5':
                         self.install_requirements()
-                    elif choice == '8':
+                    elif choice == '6':
                         self.show_system_info()
-                    elif choice == '9':
+                    elif choice == '7':
                         self.fix_pip_permissions()
-                    elif choice == '10':
+                    elif choice == '8':
                         self.check_repository_status('bot')
                     else:
-                        print(Colors.red("无效选择，请输入 0-10 之间的数字"))
+                        print(Colors.red("无效选择，请输入 0-8 之间的数字"))
                     
                     if choice != '0':
                         print()

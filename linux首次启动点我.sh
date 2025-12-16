@@ -5,163 +5,165 @@ export LANG=zh_CN.UTF-8
 export LC_ALL=zh_CN.UTF-8
 
 # 切换到脚本所在目录
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "========================================"
-echo "       MoFox-Core 首次启动配置"
-echo "========================================"
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}       MoFox-Core 首次启动配置${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo
 echo "本程序将为您完成以下操作："
-echo "  • 创建Python虚拟环境"
-echo "  • 安装所有必要的依赖包"
-echo "  • 初始化运行环境"
+echo "  1. 检查并安装系统依赖 (Python3, Git)"
+echo "  2. 拉取/更新 MoFox-Core 主程序"
+echo "  3. 创建 Python 虚拟环境"
+echo "  4. 安装项目依赖包"
+echo "  5. 初始化运行环境"
 echo
-echo " 首次运行可能需要几分钟时间，请耐心等待"
-echo "========================================"
+echo -e "${YELLOW}注意：安装系统依赖可能需要管理员权限 (sudo)${NC}"
 echo
 
-# 检测是否在临时目录中运行
-CURRENT_PATH="$(pwd)"
-IN_ARCHIVE=0
-
-if echo "$CURRENT_PATH" | grep -qi "temp"; then
-    IN_ARCHIVE=1
-elif echo "$CURRENT_PATH" | grep -qi "tmp"; then
-    IN_ARCHIVE=1
-fi
-
-if [ "$IN_ARCHIVE" -eq 1 ]; then
-    echo "检测到在压缩包中运行！"
-    echo
-    echo "请先解压缩文件到本地目录再运行此脚本"
-    echo "直接在压缩包中运行会导致程序异常"
-    echo
-    echo "按任意键退出，请解压后重新运行"
-    read -n 1 -s
+# 检查是否在压缩包中运行
+if [[ "$(pwd)" =~ "temp" ]] || [[ "$(pwd)" =~ "tmp" ]]; then
+    echo -e "${RED}检测到在压缩包中运行！请解压后运行。${NC}"
     exit 1
 fi
 
-# 删除旧的依赖安装标记文件
-if [ -f ".deps_installed" ]; then
-    rm ".deps_installed"
-    echo "已清理旧的安装标记"
-fi
+# --- 步骤 1: 检查并安装系统依赖 ---
+echo -e "${GREEN}步骤 1: 检查系统依赖...${NC}"
 
-echo "步骤1：检查Python环境..."
+install_packages() {
+    if command -v apt-get &> /dev/null; then
+        echo "检测到 Debian/Ubuntu 系统，正在安装依赖..."
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip python3-venv git
+    elif command -v yum &> /dev/null; then
+        echo "检测到 CentOS/RHEL 系统，正在安装依赖..."
+        sudo yum install -y python3 python3-pip git
+    elif command -v dnf &> /dev/null; then
+        echo "检测到 Fedora 系统，正在安装依赖..."
+        sudo dnf install -y python3 python3-pip git
+    elif command -v pacman &> /dev/null; then
+        echo "检测到 Arch Linux 系统，正在安装依赖..."
+        sudo pacman -S --noconfirm python python-pip git
+    else
+        echo -e "${RED}未检测到支持的包管理器，请手动安装 python3, python3-venv, git${NC}"
+        return 1
+    fi
+}
 
-# 检查系统Python
+# 检查 Python3
 if ! command -v python3 &> /dev/null; then
-    echo "错误：未找到python3！"
-    echo
-    echo "请先安装Python 3.8或更高版本。"
-    echo "Ubuntu/Debian: sudo apt update && sudo apt install python3 python3-pip python3-venv"
-    echo "CentOS/RHEL: sudo yum install python3 python3-pip"
-    echo "Arch Linux: sudo pacman -S python python-pip"
-    echo
-    read -p "按任意键退出..."
+    echo -e "${YELLOW}未找到 Python3，尝试安装...${NC}"
+    install_packages
+else
+    echo -e "✅ Python3 已安装"
+fi
+
+# 检查 Git
+if ! command -v git &> /dev/null; then
+    echo -e "${YELLOW}未找到 Git，尝试安装...${NC}"
+    install_packages
+else
+    echo -e "✅ Git 已安装"
+fi
+
+# 再次检查
+if ! command -v python3 &> /dev/null || ! command -v git &> /dev/null; then
+    echo -e "${RED}依赖安装失败，请手动安装 Python3 和 Git 后重试。${NC}"
     exit 1
 fi
 
-PYTHON_CMD="python3"
-PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | cut -d' ' -f2)
-echo "✅ 找到Python $PYTHON_VERSION"
-
+# --- 步骤 2: 拉取/更新主程序 ---
 echo
-echo "步骤2：创建虚拟环境..."
+echo -e "${GREEN}步骤 2: 拉取 MoFox-Core 主程序...${NC}"
 
-# 删除现有虚拟环境
+REPO_URL="https://github.com/MoFox-Studio/MoFox-Core.git"
+TARGET_DIR="Bot"
+
+if [ -d "$TARGET_DIR" ]; then
+    echo "检测到 Bot 目录已存在，尝试更新..."
+    cd "$TARGET_DIR"
+    if [ -d ".git" ]; then
+        git pull
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ 更新成功${NC}"
+        else
+            echo -e "${RED}❌ 更新失败，请检查网络或手动解决冲突${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️ Bot 目录存在但不是 Git 仓库，跳过更新${NC}"
+    fi
+    cd "$SCRIPT_DIR"
+else
+    echo "正在克隆仓库..."
+    git clone "$REPO_URL" "$TARGET_DIR"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ 克隆成功${NC}"
+    else
+        echo -e "${RED}❌ 克隆失败，请检查网络连接${NC}"
+        exit 1
+    fi
+fi
+
+# --- 步骤 3: 创建虚拟环境 ---
+echo
+echo -e "${GREEN}步骤 3: 创建虚拟环境...${NC}"
+
+# 删除旧的虚拟环境
 if [ -d ".venv" ]; then
-    echo "  删除现有虚拟环境..."
+    echo "清理旧的虚拟环境..."
     rm -rf ".venv"
 fi
 
-# 创建新的虚拟环境
-echo "创建新的虚拟环境..."
-$PYTHON_CMD -m venv .venv
+python3 -m venv .venv
 if [ $? -ne 0 ]; then
-    echo "❌ 虚拟环境创建失败！"
-    echo
-    echo "可能的原因："
-    echo "- 缺少 python3-venv 包 (请尝试: sudo apt install python3-venv)"
-    echo "- 权限不足 (请尝试使用 sudo 运行此脚本)"
-    echo
-    read -p "按任意键退出..."
+    echo -e "${RED}❌ 虚拟环境创建失败！请尝试安装 python3-venv (如: sudo apt install python3-venv)${NC}"
     exit 1
 fi
+echo -e "${GREEN}✅ 虚拟环境创建成功${NC}"
 
-echo "✅ 虚拟环境创建成功"
-
-# 检查虚拟环境
-VENV_PATH="$SCRIPT_DIR/.venv"
-PYTHON_PATH="$VENV_PATH/bin/python"
-PIP_PATH="$VENV_PATH/bin/pip"
-
-if [ ! -f "$PYTHON_PATH" ]; then
-    echo "❌ 虚拟环境验证失败！"
-    read -p "按任意键退出..."
-    exit 1
-fi
-
+# --- 步骤 4: 安装依赖 ---
 echo
-echo "步骤3：安装依赖包..."
-echo
+echo -e "${GREEN}步骤 4: 安装依赖包...${NC}"
 
-SUCCESS_COUNT=0
-TOTAL_COUNT=0
+VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
+VENV_PIP="$SCRIPT_DIR/.venv/bin/pip"
 
-for dir in "Bot"; do
-    if [ -f "$dir/requirements.txt" ]; then
-        TOTAL_COUNT=$((TOTAL_COUNT + 1))
-        echo "正在安装 $dir 的依赖包..."
-        echo "   依赖文件：$dir/requirements.txt"
-        
-        "$PIP_PATH" install -r "$dir/requirements.txt" --no-cache-dir --disable-pip-version-check
-        
-        if [ $? -eq 0 ]; then
-            echo "✅ $dir 依赖包安装完成"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-        else
-            echo "❌ $dir 依赖包安装失败"
-            echo "   请检查网络连接或依赖包是否存在问题"
-        fi
-        echo
+# 升级 pip
+"$VENV_PYTHON" -m pip install --upgrade pip
+
+if [ -f "Bot/requirements.txt" ]; then
+    echo "正在安装 Bot 依赖..."
+    "$VENV_PIP" install -r Bot/requirements.txt
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ 依赖安装成功${NC}"
     else
-        echo " 未找到 $dir/requirements.txt，跳过"
+        echo -e "${RED}❌ 依赖安装失败${NC}"
     fi
-done
-
-echo "安装总结："
-echo "   成功：$SUCCESS_COUNT/$TOTAL_COUNT 个模块"
-echo
-
-if [ $SUCCESS_COUNT -lt $TOTAL_COUNT ]; then
-    echo " 部分依赖安装失败，但可以继续使用"
-    echo "   如遇到问题，请重新运行此脚本"
 else
-    echo "✅ 所有依赖安装完成！"
+    echo -e "${YELLOW}⚠️ 未找到 Bot/requirements.txt，跳过依赖安装${NC}"
 fi
 
-# 创建安装完成标记
-echo "Environment initialized on $(date)" > ".deps_installed"
-echo "Python: $PYTHON_VERSION" >> ".deps_installed"
-echo "Modules: $SUCCESS_COUNT/$TOTAL_COUNT" >> ".deps_installed"
+# 标记安装完成
+echo "Initialized on $(date)" > ".deps_installed"
+
+# --- 步骤 5: 启动 ---
+echo
+echo -e "${GREEN}步骤 5: 启动管理程序...${NC}"
+echo
+
+"$VENV_PYTHON" mofox-core.py
 
 echo
-echo "步骤4：启动主程序..."
-echo
-
-# 直接启动主程序
-"$PYTHON_PATH" mofox-core.py
-
-echo
-echo "========================================"
-echo "   MoFox-Core 环境配置完成！"
-echo
-echo "   下次使用请直接运行："
-echo "   \"./linux启动点我.sh\""
-echo
-echo "  如需重新配置环境，请重新运行此脚本"
-echo "========================================"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}   MoFox-Core 环境配置完成！${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo "下次请直接运行 ./linux启动点我.sh"
 echo
 read -p "按任意键退出..."
