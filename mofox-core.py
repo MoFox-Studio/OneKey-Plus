@@ -51,9 +51,6 @@ class MoFoxManager:
         self.venv_python = self.base_path / ".venv" / "bin" / "python"
         self.running_processes: Dict[str, subprocess.Popen] = {}
         
-        # GitHub Access Token (编码，仅具有指定仓库的读取权限)
-        self._github_token_encoded = "Z2hwX2NPVlVkYk8wa2RBVzM1bEVJaHdqUmxFQlNIQUwyRjNoSll4Rg=="
-        
         # 服务配置
         self.services = {
             "bot": {
@@ -77,15 +74,6 @@ class MoFoxManager:
         print(Colors.yellow("              Version 1.0"))
         print("=" * 60)
         print(Colors.blue("Edited by 阿范 @212898630"))
-    
-    def _get_github_token(self) -> Optional[str]:
-        """获取GitHub访问Token"""
-        try:
-            token = base64.b64decode(self._github_token_encoded).decode('utf-8')
-            return token
-        except Exception as e:
-            print(Colors.red(f"获取GitHub Token失败: {e}"))
-            return None
 
     def print_menu(self):
         """打印主菜单"""
@@ -316,17 +304,12 @@ class MoFoxManager:
         
         print(Colors.blue(f"正在更新 {service['name']} 仓库..."))
         
-        github_token = self._get_github_token()
-        
-        if github_token:
-            success = self._update_with_token(service, repo_path, github_token)
-        else:
-            print(Colors.red("GitHub Token不可用，无法更新私有仓库"))
-            print(Colors.cyan("提示：请检查Token配置或手动更新"))
-            return False
+        success, output = self.run_command(['git', 'pull'], cwd=repo_path)
         
         if success:
             print(Colors.green(f"✅ {service['name']} 仓库更新成功"))
+            if output.strip():
+                print(Colors.cyan(f"更新信息: {output.strip()}"))
             
             requirements_file = repo_path / "requirements.txt"
             if requirements_file.exists():
@@ -352,61 +335,6 @@ class MoFoxManager:
             return True
         else:
             print(Colors.red(f"❌ {service['name']} 仓库更新失败"))
-            return False
-    
-    def _update_with_token(self, service: dict, repo_path: Path, token: str) -> bool:
-        """使用Token进行认证更新"""
-        try:
-            repo_url = service.get("repo_url", "")
-            if repo_url.startswith("https://github.com/"):
-                auth_url = repo_url.replace("https://github.com/", f"https://{token}@github.com/")
-                
-                original_helper = self._get_git_config(repo_path, "credential.helper")
-                original_askpass = self._get_git_config(repo_path, "core.askpass")
-                
-                try:
-                    self._set_git_config(repo_path, "credential.helper", "")
-                    self._set_git_config(repo_path, "core.askpass", "")
-                    
-                    env = os.environ.copy()
-                    env['GIT_TERMINAL_PROMPT'] = '0'
-                    env['GIT_ASKPASS'] = ''
-                    env['SSH_ASKPASS'] = ''
-                    
-                    set_url_cmd = ['git', 'remote', 'set-url', 'origin', auth_url]
-                    success, output = self.run_command_with_env(set_url_cmd, cwd=repo_path, env=env, show_output=False)
-                    
-                    if not success:
-                        stderr = output.get('stderr', '') if isinstance(output, dict) else str(output)
-                        print(Colors.red(f"设置认证URL失败: {stderr}"))
-                        return False
-                    
-                    pull_success, pull_output = self.run_command_with_env(['git', 'pull'], cwd=repo_path, env=env, show_output=False)
-                    
-                    restore_url_cmd = ['git', 'remote', 'set-url', 'origin', repo_url]
-                    self.run_command_with_env(restore_url_cmd, cwd=repo_path, env=env, show_output=False)
-                    
-                    if pull_success:
-                        stdout = pull_output.get('stdout', '') if isinstance(pull_output, dict) else str(pull_output)
-                        print(Colors.green("✅ 使用Token认证更新成功"))
-                        if stdout.strip():
-                            print(Colors.cyan(f"更新信息: {stdout.strip()}"))
-                        return True
-                    else:
-                        stderr = pull_output.get('stderr', '') if isinstance(pull_output, dict) else str(pull_output)
-                        print(Colors.red(f"Token认证更新失败: {stderr}"))
-                        return False
-                        
-                finally:
-                    self._restore_git_config(repo_path, "credential.helper", original_helper)
-                    self._restore_git_config(repo_path, "core.askpass", original_askpass)
-                    
-            else:
-                print(Colors.red("不支持的仓库URL格式"))
-                return False
-                
-        except Exception as e:
-            print(Colors.red(f"Token认证更新出错: {e}"))
             return False
     
     def _get_git_config(self, repo_path: Path, key: str) -> Optional[str]:
@@ -500,8 +428,6 @@ class MoFoxManager:
         print(f"路径: {Colors.cyan(str(repo_path))}")
         print()
         
-        github_token = self._get_github_token()
-        
         try:
             original_cwd = os.getcwd()
             os.chdir(repo_path)
@@ -509,25 +435,9 @@ class MoFoxManager:
             env = os.environ.copy()
             env['GIT_TERMINAL_PROMPT'] = '0'
             
-            original_url = None
-            if github_token:
-                print(Colors.blue("使用Token认证获取远程仓库更新..."))
-                get_url_result = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env)
-                if get_url_result.returncode == 0:
-                    original_url = get_url_result.stdout.strip()
-                    if original_url.startswith("https://github.com/"):
-                        auth_url = original_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        set_url_result = subprocess.run(["git", "remote", "set-url", "origin", auth_url], capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env)
-                        if set_url_result.returncode != 0:
-                            print(Colors.yellow("设置认证URL失败，使用普通方式检查"))
-                            github_token = None
-            else:
-                print(Colors.blue("正在获取远程仓库更新..."))
+            print(Colors.blue("正在获取远程仓库更新..."))
             
             fetch_result = subprocess.run(["git", "fetch", "origin"], capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env)
-            
-            if github_token and original_url:
-                subprocess.run(["git", "remote", "set-url", "origin", original_url], capture_output=True, text=True, encoding='utf-8', errors='ignore', env=env)
             
             if fetch_result.returncode != 0:
                 print(Colors.red(f"获取远程更新失败: {fetch_result.stderr}"))
