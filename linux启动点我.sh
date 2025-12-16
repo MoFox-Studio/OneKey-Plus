@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 设置UTF-8编码
 export LANG=zh_CN.UTF-8

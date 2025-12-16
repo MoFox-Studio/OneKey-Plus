@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # 设置UTF-8编码
 export LANG=zh_CN.UTF-8
@@ -38,6 +38,12 @@ fi
 echo -e "${GREEN}步骤 1: 检查系统依赖...${NC}"
 
 install_packages() {
+    # 检查权限
+    if [ "$EUID" -ne 0 ] && ! command -v sudo &> /dev/null; then
+        echo -e "${RED}错误: 需要 root 权限或 sudo 来安装系统依赖。${NC}"
+        return 1
+    fi
+
     if command -v apt-get &> /dev/null; then
         echo "检测到 Debian/Ubuntu 系统，正在安装依赖..."
         sudo apt-get update
@@ -106,7 +112,13 @@ else
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✅ 克隆成功${NC}"
     else
-        echo -e "${RED}❌ 克隆失败，请检查网络连接${NC}"
+        echo -e "${RED}❌ 克隆失败！${NC}"
+        echo -e "${YELLOW}可能的原因：${NC}"
+        echo "  1. 网络连接问题 (GitHub 访问受限)"
+        echo "  2. 目标目录没有写入权限"
+        echo -e "${YELLOW}建议：${NC}"
+        echo "  - 检查网络或配置代理"
+        echo "  - 尝试手动克隆: git clone $REPO_URL $TARGET_DIR"
         exit 1
     fi
 fi
@@ -145,6 +157,10 @@ if [ -f "Bot/requirements.txt" ]; then
         echo -e "${GREEN}✅ 依赖安装成功${NC}"
     else
         echo -e "${RED}❌ 依赖安装失败${NC}"
+        echo -e "${YELLOW}建议：${NC}"
+        echo "  - 检查网络连接"
+        echo "  - 尝试更换 pip 源 (例如使用清华源)"
+        echo "  - 手动运行: $VENV_PIP install -r Bot/requirements.txt"
     fi
 else
     echo -e "${YELLOW}⚠️ 未找到 Bot/requirements.txt，跳过依赖安装${NC}"
@@ -158,7 +174,11 @@ echo
 echo -e "${GREEN}步骤 5: 启动管理程序...${NC}"
 echo
 
-"$VENV_PYTHON" mofox-core.py
+if [ -f "mofox-core.py" ]; then
+    "$VENV_PYTHON" mofox-core.py
+else
+    echo -e "${RED}❌ 错误：找不到 mofox-core.py 主程序文件！${NC}"
+fi
 
 echo
 echo -e "${GREEN}========================================${NC}"
