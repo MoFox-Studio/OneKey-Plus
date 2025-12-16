@@ -180,6 +180,42 @@ else
     echo -e "${RED}❌ 错误：找不到 mofox-core.py 主程序文件！${NC}"
 fi
 
+# --- 步骤 6: 配置快捷命令 ---
+echo
+echo -e "${GREEN}步骤 6: 配置快捷命令 (可选)...${NC}"
+
+LAUNCHER_SCRIPT="$SCRIPT_DIR/linux启动点我.sh"
+
+if [ -f "$LAUNCHER_SCRIPT" ]; then
+    echo "检测到启动脚本: $LAUNCHER_SCRIPT"
+    echo -e "${YELLOW}是否创建 'mofox' 全局命令？${NC}"
+    echo "这样您可以在终端任意位置输入 'mofox' 来启动程序。"
+    read -p "请输入 (y/n) [默认 y]: " create_cmd_choice
+    create_cmd_choice=${create_cmd_choice:-y}
+
+    if [[ "$create_cmd_choice" =~ ^[Yy]$ ]]; then
+        # 赋予执行权限
+        chmod +x "$LAUNCHER_SCRIPT"
+        
+        echo "正在创建软链接 /usr/local/bin/mofox ..."
+        # 检查是否已有 sudo 权限，如果没有则提示
+        if [ "$EUID" -ne 0 ]; then
+            echo "需要管理员权限来创建全局命令，请输入密码："
+        fi
+        
+        if sudo ln -sf "$LAUNCHER_SCRIPT" /usr/local/bin/mofox; then
+            echo -e "${GREEN}✅ 命令 'mofox' 创建成功！${NC}"
+            echo "您现在可以在终端输入 'mofox' 来启动程序。"
+        else
+            echo -e "${RED}❌ 创建失败，请检查 sudo 权限。${NC}"
+        fi
+    else
+        echo "已跳过创建快捷命令。"
+    fi
+else
+    echo -e "${YELLOW}⚠️ 未找到 linux启动点我.sh，跳过快捷命令配置。${NC}"
+fi
+
 echo
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}   MoFox-Core 环境配置完成！${NC}"
