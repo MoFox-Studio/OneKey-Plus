@@ -183,19 +183,63 @@ class Updater:
 
             branch = service.get("branch", "master")
 
+            # 添加日志：显示当前分支
+            print(Colors.cyan("检查当前分支状态..."))
+            sys.stdout.flush()
+            current_branch_success, current_branch_output = self.run_command_with_env(
+                ["git", "branch", "--show-current"], cwd=repo_path, env=env
+            )
+            if current_branch_success:
+                print(Colors.cyan(f"当前分支: {current_branch_output['stdout'].strip()}"))
+            sys.stdout.flush()
+
+            # 添加日志：fetch远程分支信息
+            print(Colors.cyan("正在获取远程分支信息..."))
+            sys.stdout.flush()
+            fetch_success, fetch_output = self.run_command_with_env(
+                ["git", "fetch", "origin"], cwd=repo_path, env=env
+            )
+            if not fetch_success:
+                print(Colors.red("获取远程分支信息失败！"))
+                print(Colors.red(f"错误信息: {fetch_output.get('stderr', '')}"))
+                sys.stdout.flush()
+                return False
+
+            # 添加日志：列出远程分支
+            print(Colors.cyan("检查远程分支列表..."))
+            sys.stdout.flush()
+            remote_branch_success, remote_branch_output = self.run_command_with_env(
+                ["git", "branch", "-r"], cwd=repo_path, env=env
+            )
+            if remote_branch_success:
+                print(Colors.cyan(f"远程分支:\n{remote_branch_output['stdout']}"))
+            sys.stdout.flush()
+
             print(Colors.cyan(f"正在切换到分支: {branch}"))
             sys.stdout.flush()
-            checkout_success, _ = self.run_command_with_env(
+            checkout_success, checkout_output = self.run_command_with_env(
                 ["git", "checkout", branch], cwd=repo_path, env=env
             )
             if not checkout_success:
                 print(Colors.cyan(f"本地不存在分支 {branch}，尝试创建并切换..."))
+                print(Colors.yellow(f"checkout错误信息: {checkout_output.get('stderr', '')}"))
                 sys.stdout.flush()
-                self.run_command_with_env(
+                create_success, create_output = self.run_command_with_env(
                     ["git", "checkout", "-b", branch, f"origin/{branch}"],
                     cwd=repo_path,
                     env=env,
                 )
+                if not create_success:
+                    print(Colors.red(f"创建并切换分支失败！"))
+                    print(Colors.red(f"错误信息: {create_output.get('stderr', '')}"))
+                    sys.stdout.flush()
+                    return False
+                else:
+                    print(Colors.green(f"成功创建并切换到分支 {branch}"))
+                    sys.stdout.flush()
+            else:
+                print(Colors.green(f"成功切换到分支 {branch}"))
+                sys.stdout.flush()
 
             print(Colors.cyan("正在从 origin 拉取最新内容..."))
             pull_success, pull_output = self.run_command_with_env(
