@@ -366,6 +366,7 @@ class MaiBotManager:
 
     # ==================== 5. BOT与文件管理 ====================
     def open_config_file(self):
+        """使用内置 VSCode 打开配置文件"""
         config_files = [
             (
                 "Bot 核心配置",
@@ -386,6 +387,16 @@ class MaiBotManager:
                 / "config.toml",
             ),
         ]
+        
+        # 检查 VSCode 是否存在
+        vscode_path = self.services["vscode"]["path"] / self.services["vscode"]["main_file"]
+        if not vscode_path.exists():
+            print(Colors.red(f"❌ VSCode 未找到: {vscode_path}"))
+            print(Colors.yellow("将使用系统默认程序打开配置文件"))
+            use_vscode = False
+        else:
+            use_vscode = True
+            
         while True:
             self.clear_screen()
             print(Colors.bold("打开配置文件"))
@@ -398,8 +409,24 @@ class MaiBotManager:
             try:
                 _, path = config_files[int(choice) - 1]
                 if path.exists():
-                    os.startfile(path)
-                    print(Colors.green("✅ 已尝试打开"))
+                    if use_vscode:
+                        # 使用内置 VSCode 打开文件
+                        try:
+                            command = [str(vscode_path), str(path)]
+                            subprocess.Popen(
+                                command,
+                                cwd=self.services["vscode"]["path"],
+                                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                            )
+                            print(Colors.green("✅ 已使用 VSCode 打开配置文件"))
+                        except Exception as e:
+                            print(Colors.red(f"❌ 使用 VSCode 打开失败: {e}"))
+                            print(Colors.yellow("尝试使用系统默认程序..."))
+                            os.startfile(path)
+                    else:
+                        # 降级到系统默认程序
+                        os.startfile(path)
+                        print(Colors.green("✅ 已尝试打开"))
                 else:
                     print(Colors.red(f"❌ 配置文件不存在: {path}"))
             except (ValueError, IndexError):
