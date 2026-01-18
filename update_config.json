@@ -3,7 +3,7 @@
         "name": "MoFox_Bot 主程序",
         "path": "core/Bot",
         "repo_url": "https://github.com/MoFox-Studio/MoFox-Core.git",
-        "branch": "master"
+        "branch": "classical"
     },
     "onekey": {
         "name": "OneKey-Plus 管理程序",

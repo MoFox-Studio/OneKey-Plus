@@ -38,8 +38,8 @@ cd /d "%~dp0"
 :: 定义核心路径
 set "PYTHON_EXECUTABLE=%~dp0python_embedded\python.exe"
 set "INIT_FLAG_FILE=%~dp0core\.initialized"
-set "UPDATE_SCRIPT=%~dp0update.py"
-set "CONFIG_SCRIPT=%~dp0config_wizard.py"
+set "UPDATE_SCRIPT=%~dp0scripts\update.py"
+set "CONFIG_SCRIPT=%~dp0scripts\config_wizard.py"
 set "MAIN_SCRIPT=%~dp0onekey.py"
 
 :: 检查Python解释器

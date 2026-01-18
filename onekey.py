@@ -615,14 +615,21 @@ class MaiBotManager:
             print("\n请选择要切换的目标分支:")
             print("  1. master (稳定版)")
             print("  2. dev (开发版)")
+            print(" 3.classical(比较新且稳定的版本)")
             print("\n  0. 返回主菜单")
 
-            choice = input(Colors.bold("请选择操作 (0-2): ")).strip()
+            choice = input(Colors.bold("请选择操作 (0-3): ")).strip()
 
             if choice == "0":
                 break
-            elif choice in ("1", "2"):
-                target_branch = "master" if choice == "1" else "dev"
+            elif choice in ("1", "2","3"):
+                if choice == "1":
+                    target_branch = "master"
+                elif choice == "2":
+                    target_branch = "dev"
+                else:  # choice == "3"
+                    target_branch = "classical"
+                
                 if target_branch == current_branch:
                     print(Colors.yellow(f"当前已在 {target_branch} 分支，无需切换。"))
                 else:

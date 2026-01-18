@@ -12,3 +12,6 @@
 !README.md
 !config_wizard.py
 !update_config.json
+!webui_installer.py
+!安装WebUI.bat
+!/scripts/

@@ -9,7 +9,7 @@ REM 设置Python可执行文件路径
 set "PYTHON_EXECUTABLE=%SCRIPT_DIR%python_embedded\python.exe"
 
 REM 设置更新脚本路径
-set "UPDATE_SCRIPT=%SCRIPT_DIR%update.py"
+set "UPDATE_SCRIPT=%SCRIPT_DIR%scripts\update.py"
 
 REM 检查Python解释器是否存在
 if not exist "%PYTHON_EXECUTABLE%" (

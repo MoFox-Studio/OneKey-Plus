@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(__file__)
 BOT_CONFIG_PATH = os.path.join(BASE_DIR, "core", "Bot", "config", "bot_config.toml")
 MODEL_CONFIG_PATH = os.path.join(BASE_DIR, "core", "Bot", "config", "model_config.toml")
 NAPCAT_ADAPTER_CONFIG_PATH = os.path.join(
-    BASE_DIR, "core", "Bot", "config", "plugins", "napcat_adapter", "config.toml"
+    BASE_DIR, "core", "Bot", "config", "plugins", "napcat_adapter_plugin", "config.toml"
 )
 ENV_PATH = os.path.join(BASE_DIR, "core", "Bot", ".env")
 
