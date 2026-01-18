@@ -144,9 +144,9 @@ class MaiBotManager:
     def print_header(self):
         print("=" * 60)
         print(Colors.cyan(Colors.bold("          MoFox_Bot 一键管理程序")))
-        print(Colors.yellow("              Version 2.4.9"))
+        print(Colors.yellow("              Version 2.5.0"))
         print("=" * 60)
-        print(Colors.green("Edited by 阿范 @212898630"))
+        print(Colors.green("Edited by 一闪@https://github.com/minecraft1024a"))
         print(Colors.green("Ps : 修改版 问题/建议 交流群群号 169850076"))
         print(
             Colors.red(
