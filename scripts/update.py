@@ -51,7 +51,19 @@ class Colors:
 class Updater:
     def __init__(self):
         self.base_path = Path(__file__).parent.absolute()
-        self.python_executable = self.base_path / "python_embedded" / "python.exe"
+        # 检查python_embedded目录是否在脚本目录中
+        python_executable_in_script_dir = self.base_path / "python_embedded" / "python.exe"
+        # 如果不在脚本目录，则尝试在上级目录查找
+        python_executable_in_parent_dir = self.base_path.parent / "python_embedded" / "python.exe"
+        
+        if python_executable_in_script_dir.exists():
+            self.python_executable = python_executable_in_script_dir
+        elif python_executable_in_parent_dir.exists():
+            self.python_executable = python_executable_in_parent_dir
+        else:
+            print(Colors.red(f"错误：未找到Python解释器 {python_executable_in_script_dir} 或 {python_executable_in_parent_dir}"))
+            sys.exit(1)
+            
         self.services = self._load_config()
         self.mirrors = [
             "https://mirrors.huaweicloud.com/repository/pypi/simple/",
@@ -63,7 +75,12 @@ class Updater:
         self.update_all()
 
     def _load_config(self):
+        # 首先尝试在脚本目录查找配置文件
         config_path = self.base_path / "update_config.json"
+        # 如果在脚本目录找不到，则尝试在上级目录查找
+        if not config_path.exists():
+            config_path = self.base_path.parent / "update_config.json"
+        
         if not config_path.exists():
             print(Colors.red(f"错误：配置文件 {config_path} 不存在！"))
             sys.exit(1)
@@ -72,7 +89,7 @@ class Updater:
             # 将路径字符串转换为Path对象
             for service, settings in config.items():
                 if "path" in settings:
-                    settings["path"] = self.base_path / settings["path"]
+                    settings["path"] = self.base_path.parent / settings["path"]
             return config
 
     def _find_git_executable(self) -> Optional[str]:
