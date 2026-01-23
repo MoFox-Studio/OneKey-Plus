@@ -50,7 +50,7 @@ class Colors:
 
 class Updater:
     def __init__(self):
-        self.base_path = Path(__file__).parent.absolute()
+        self.base_path = Path(__file__).parent.parent.absolute()
         self.python_executable = self.base_path / "python_embedded" / "python.exe"
         self.services = self._load_config()
         self.mirrors = [
