@@ -383,7 +383,7 @@ class MaiBotManager:
                 / "Bot"
                 / "config"
                 / "plugins"
-                / "napcat_adapter"
+                / "napcat_adapter_plugin"
                 / "config.toml",
             ),
         ]

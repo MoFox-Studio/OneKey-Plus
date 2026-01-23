@@ -50,20 +50,11 @@ class Colors:
 
 class Updater:
     def __init__(self):
-        self.base_path = Path(__file__).parent.absolute()
-        # 检查python_embedded目录是否在脚本目录中
-        python_executable_in_script_dir = self.base_path / "python_embedded" / "python.exe"
-        # 如果不在脚本目录，则尝试在上级目录查找
-        python_executable_in_parent_dir = self.base_path.parent / "python_embedded" / "python.exe"
-        
-        if python_executable_in_script_dir.exists():
-            self.python_executable = python_executable_in_script_dir
-        elif python_executable_in_parent_dir.exists():
-            self.python_executable = python_executable_in_parent_dir
-        else:
-            print(Colors.red(f"错误：未找到Python解释器 {python_executable_in_script_dir} 或 {python_executable_in_parent_dir}"))
-            sys.exit(1)
-            
+        self.base_path = Path(__file__).parent.parent.absolute()
+        self.python_executable = self.base_path / "python_embedded" / "python.exe"
+        if not self.python_executable.exists:
+                print(1)
+                self.python_executable = self.base_path.parent / "python_embedded" / "python.exe"
         self.services = self._load_config()
         self.mirrors = [
             "https://mirrors.huaweicloud.com/repository/pypi/simple/",
