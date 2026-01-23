@@ -11,7 +11,7 @@ import uuid
 from collections.abc import MutableMapping
 
 # --- 路径定义 ---
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 修改为上级目录
 BOT_CONFIG_PATH = os.path.join(BASE_DIR, "core", "Bot", "config", "bot_config.toml")
 PLUGINS_DIR = os.path.join(BASE_DIR, "core", "Bot", "src", "plugins")
 WEBUI_PLUGIN_DIR = os.path.join(PLUGINS_DIR, "webui_backend")
