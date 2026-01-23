@@ -63,7 +63,12 @@ class Updater:
         self.update_all()
 
     def _load_config(self):
+        # 首先尝试在脚本目录查找配置文件
         config_path = self.base_path / "update_config.json"
+        # 如果在脚本目录找不到，则尝试在上级目录查找
+        if not config_path.exists():
+            config_path = self.base_path.parent / "update_config.json"
+        
         if not config_path.exists():
             print(Colors.red(f"错误：配置文件 {config_path} 不存在！"))
             sys.exit(1)
@@ -72,7 +77,7 @@ class Updater:
             # 将路径字符串转换为Path对象
             for service, settings in config.items():
                 if "path" in settings:
-                    settings["path"] = self.base_path / settings["path"]
+                    settings["path"] = self.base_path.parent / settings["path"]
             return config
 
     def _find_git_executable(self) -> Optional[str]:

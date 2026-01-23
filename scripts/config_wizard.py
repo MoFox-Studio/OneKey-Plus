@@ -8,7 +8,7 @@ import copy
 from collections.abc import MutableMapping
 
 # --- 路径定义 ---
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 修改为上级目录
 BOT_CONFIG_PATH = os.path.join(BASE_DIR, "core", "Bot", "config", "bot_config.toml")
 MODEL_CONFIG_PATH = os.path.join(BASE_DIR, "core", "Bot", "config", "model_config.toml")
 NAPCAT_ADAPTER_CONFIG_PATH = os.path.join(
